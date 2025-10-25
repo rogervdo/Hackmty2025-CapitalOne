@@ -4,7 +4,7 @@ import mysql.connector
 from datetime import datetime
 
 
-genai.configure(api_key="TU_API_KEY_AQUI")
+genai.configure(api_key="AIzaSyB9JIhKFx4cMnI55j2qGYGT1wFoUoeCGSw")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 
