@@ -36,7 +36,7 @@ struct DashboardView: View {
                 // Header
                 HStack(alignment: .top) {
                     Text("Inicio")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.primary)
                     Spacer()
                 }
