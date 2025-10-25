@@ -24,14 +24,8 @@ struct SwipeView: View {
     @State private var alignedCount = 0
     @State private var regretCount = 0
     @State private var isCompleted = false
-    @State private var actionHistory: [SwipeAction] = []
     
     @State private var trigger = 0
-    
-    enum SwipeAction {
-        case aligned
-        case regret
-    }
     
     var body: some View {
         ZStack {
@@ -75,7 +69,7 @@ struct SwipeView: View {
                 .foregroundColor(.secondary)
             
             // Undo button
-            if currentIndex > 0 && !actionHistory.isEmpty {
+            if currentIndex > 0 && transactions.prefix(currentIndex).contains(where: { $0.aligned != nil }) {
                 Button(action: {
                     undoLastAction()
                 }) {
@@ -109,7 +103,6 @@ struct SwipeView: View {
                         )
                         .scaleEffect(index == currentIndex ? 1.0 : 0.95 - CGFloat(index - currentIndex) * 0.05)
                         .rotationEffect(.degrees(index == currentIndex ? rotation : 0))
-                        .opacity(index == currentIndex ? 1.0 : 0.8 - Double(index - currentIndex) * 0.2)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: offset)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: currentIndex)
                         .gesture(
@@ -258,9 +251,27 @@ struct SwipeView: View {
             rotation = -20
         }
         
+        // Update the transaction's aligned property
+        transactions[currentIndex] = Transaction(
+            id: transactions[currentIndex].id,
+            chargeName: transactions[currentIndex].chargeName,
+            timestamp: transactions[currentIndex].timestamp,
+            amount: transactions[currentIndex].amount,
+            location: transactions[currentIndex].location,
+            category: transactions[currentIndex].category,
+            aligned: "regret"
+        )
+        
         regretCount += 1
-        actionHistory.append(.regret)
-        print("Swiped LEFT (Regret): \(transactions[currentIndex].chargeName)")
+        
+        // Log the swipe action with transaction details
+        print("🔴 SWIPE LEFT (Regret)")
+        print("   Transaction: \(transactions[currentIndex].chargeName)")
+        print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
+        print("   Aligned Value: regret")
+        print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
+        print("   Timestamp: \(transactions[currentIndex].timestamp)")
+        print("---")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             currentIndex += 1
@@ -272,9 +283,10 @@ struct SwipeView: View {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                     isCompleted = true
                 }
-                // Trigger confetti celebration
+                // Trigger confetti celebration and log session results
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     trigger += 1
+                    logSessionResults()
                 }
             }
         }
@@ -287,9 +299,27 @@ struct SwipeView: View {
             rotation = 20
         }
         
+        // Update the transaction's aligned property
+        transactions[currentIndex] = Transaction(
+            id: transactions[currentIndex].id,
+            chargeName: transactions[currentIndex].chargeName,
+            timestamp: transactions[currentIndex].timestamp,
+            amount: transactions[currentIndex].amount,
+            location: transactions[currentIndex].location,
+            category: transactions[currentIndex].category,
+            aligned: "align"
+        )
+        
         alignedCount += 1
-        actionHistory.append(.aligned)
-        print("Swiped RIGHT (Aligned): \(transactions[currentIndex].chargeName)")
+        
+        // Log the swipe action with transaction details
+        print("🟢 SWIPE RIGHT (Align)")
+        print("   Transaction: \(transactions[currentIndex].chargeName)")
+        print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
+        print("   Aligned Value: align")
+        print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
+        print("   Timestamp: \(transactions[currentIndex].timestamp)")
+        print("---")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             currentIndex += 1
@@ -301,16 +331,21 @@ struct SwipeView: View {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                     isCompleted = true
                 }
-                // Trigger confetti celebration
+                // Trigger confetti celebration and log session results
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     trigger += 1
+                    logSessionResults()
                 }
             }
         }
     }
     
     private func undoLastAction() {
-        guard currentIndex > 0, !actionHistory.isEmpty else { return }
+        guard currentIndex > 0 else { return }
+        
+        // Find the most recent transaction with an aligned value
+        let previousIndex = currentIndex - 1
+        guard let previousAligned = transactions[previousIndex].aligned else { return }
         
         withAnimation(.easeInOut(duration: 0.3)) {
             currentIndex -= 1
@@ -319,15 +354,35 @@ struct SwipeView: View {
             isCompleted = false
         }
         
-        // Revert the last action's count
-        let lastAction = actionHistory.removeLast()
-        switch lastAction {
-        case .aligned:
+        // Revert the transaction's aligned property
+        transactions[previousIndex] = Transaction(
+            id: transactions[previousIndex].id,
+            chargeName: transactions[previousIndex].chargeName,
+            timestamp: transactions[previousIndex].timestamp,
+            amount: transactions[previousIndex].amount,
+            location: transactions[previousIndex].location,
+            category: transactions[previousIndex].category,
+            aligned: nil
+        )
+        
+        // Revert the count based on what was undone
+        switch previousAligned {
+        case "align":
             alignedCount -= 1
-            print("Undid ALIGNED action for: \(transactions[currentIndex].chargeName)")
-        case .regret:
+            print("↩️ UNDO ACTION")
+            print("   Transaction: \(transactions[previousIndex].chargeName)")
+            print("   Previous Aligned Value: align → nil")
+            print("   Amount: $\(String(format: "%.2f", transactions[previousIndex].amount))")
+            print("---")
+        case "regret":
             regretCount -= 1
-            print("Undid REGRET action for: \(transactions[currentIndex].chargeName)")
+            print("↩️ UNDO ACTION")
+            print("   Transaction: \(transactions[previousIndex].chargeName)")
+            print("   Previous Aligned Value: regret → nil")
+            print("   Amount: $\(String(format: "%.2f", transactions[previousIndex].amount))")
+            print("---")
+        default:
+            break
         }
     }
     
@@ -339,8 +394,60 @@ struct SwipeView: View {
             isCompleted = false
             offset = .zero
             rotation = 0
-            actionHistory.removeAll()
+            
+            // Reset all transactions' aligned property
+            for i in transactions.indices {
+                transactions[i] = Transaction(
+                    id: transactions[i].id,
+                    chargeName: transactions[i].chargeName,
+                    timestamp: transactions[i].timestamp,
+                    amount: transactions[i].amount,
+                    location: transactions[i].location,
+                    category: transactions[i].category,
+                    aligned: nil
+                )
+            }
         }
+    }
+    
+    private func logSessionResults() {
+        print("\n🎉 SESSION COMPLETED! 🎉")
+        print("========================")
+        print("📊 FINAL SESSION RESULTS:")
+        print("   Total Transactions: \(transactions.count)")
+        print("   Aligned: \(alignedCount)")
+        print("   Regrets: \(regretCount)")
+        print("========================")
+        print("\n📋 ALL TRANSACTIONS WITH ALIGNED VALUES:")
+        print("==========================================")
+        
+        for (index, transaction) in transactions.enumerated() {
+            let alignedStatus = transaction.aligned ?? "unprocessed"
+            let emoji = transaction.aligned == "align" ? "🟢" : transaction.aligned == "regret" ? "🔴" : "⚪"
+            
+            print("\(index + 1). \(emoji) \(transaction.chargeName)")
+            print("   Amount: $\(String(format: "%.2f", transaction.amount))")
+            print("   Location: \(transaction.location ?? "Unknown")")
+            print("   Aligned Value: \(alignedStatus)")
+            print("   Date: \(transaction.timestamp)")
+            print("   ID: \(transaction.id)")
+            print("   ---")
+        }
+        
+        print("==========================================")
+        print("🔥 SESSION SUMMARY ARRAY:")
+        let sessionSummary = transactions.map { transaction in
+            return [
+                "chargeName": transaction.chargeName,
+                "amount": transaction.amount,
+                "aligned": transaction.aligned ?? "unprocessed",
+                "location": transaction.location ?? "Unknown",
+                "id": transaction.id.uuidString
+            ]
+        }
+        
+        print(sessionSummary)
+        print("==========================================\n")
     }
 }
 
