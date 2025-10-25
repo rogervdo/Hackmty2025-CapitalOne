@@ -1,18 +1,10 @@
-//
-//  Login.swift
-//  CapitalOneApp
-//
-//  Created by Rogelio Villarreal on 10/25/25.
-//
-
 import SwiftUI
 import Combine
 
 // MARK: - Login View (SwiftUI)
-// Pantalla de Login para el hackathon. Acepta USUARIO o CORREO + CONTRASEÑA.
-// Autenticación hardcodeada; al hacer login exitoso marca @AppStorage("isAuthenticated") = true
-
 struct LoginView: View {
+    @State private var goToMain = false
+    @State private var showAuthError = false
     @StateObject private var vm = LoginViewModel()
     @AppStorage("isAuthenticated") private var isAuthenticated = false
     @FocusState private var focused: Field?
@@ -20,168 +12,167 @@ struct LoginView: View {
     enum Field { case username, password }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(.systemGray6), Color(.systemGray5)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+        // si ya estamos autenticados, en lugar de hacer push navegando,
+        // rendereamos directamente MainTabView y NO mostramos el login.
+        if isAuthenticated || goToMain {
+            MainTabView()
+        } else {
+            NavigationStack {
+                ZStack {
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(.systemGray6), Color(.systemGray5)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Encabezados
-                        Text("Iniciar sesión")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(.primary)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            // Encabezados
+                            Text("Sign in")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundStyle(.primary)
+                                .padding(.top, 8)
+
+                            Text("Enter your credentials to continue")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 8)
+
+                            // Usuario o correo
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Username or email")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+
+                                IconTextField(
+                                    placeholder: "username or email",
+                                    text: $vm.username,
+                                    icon: "person",
+                                    keyboard: .default,
+                                    contentType: .username,
+                                    focused: _focused,
+                                    field: .username
+                                )
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled(true)
+                            }
+
+                            // Contraseña
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Password")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+
+                                PasswordField(
+                                    placeholder: "••••••••",
+                                    text: $vm.password,
+                                    focused: _focused,
+                                    field: .password
+                                )
+                            }
+
+                            // Recordarme + Olvidé contraseña
+                            HStack(alignment: .center) {
+
+                                Spacer()
+
+                                Button("¿Forgot your password?") { /* noop (demo) */ }
+                                    .font(.footnote.weight(.semibold))
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(Color.brandBlue)
+                            }
+                            .padding(.top, 2)
+
+                            // Entrar
+                            Button(action: {
+                                Task {
+                                    await vm.submit()
+                                    if vm.formError == nil {
+                                        isAuthenticated = true   // persist
+                                        goToMain = true           // dispara cambio de vista
+                                    } else {
+                                        showAuthError = true
+                                    }
+                                }
+                            }) {
+                                HStack {
+                                    Text("Continue")
+                                        .fontWeight(.semibold)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(!vm.canSubmit || vm.isLoading)
                             .padding(.top, 8)
+                            .accessibilityIdentifier("login_enter_button")
 
-                        Text("Ingresa tus credenciales para continuar")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.bottom, 8)
+                            // ❌ NavigationLink oculto eliminado
+                            // NavigationLink(destination: MainTabView(), isActive: $goToMain){EmptyView()}
 
-                        // Usuario o correo
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Usuario o correo")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            IconTextField(
-                                placeholder: "usuario o correo",
-                                text: $vm.username,
-                                icon: "person",
-                                keyboard: .default,
-                                contentType: .username,
-                                focused: _focused,
-                                field: .username
-                            )
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled(true)
-
-                            if let error = vm.usernameError, !error.isEmpty {
-                                FieldErrorLabel(error)
-                            }
+                            Spacer(minLength: 24)
                         }
-
-                        // Contraseña
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Contraseña")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            PasswordField(
-                                placeholder: "••••••••",
-                                text: $vm.password,
-                                focused: _focused,
-                                field: .password
-                            )
-
-                            if let error = vm.passwordError, !error.isEmpty {
-                                FieldErrorLabel(error)
-                            }
-                        }
-
-                        // Recordarme + Olvidé contraseña
-                        HStack(alignment: .center) {
-                            Toggle(isOn: $vm.rememberMe) {
-                                Text("Recordarme")
-                            }
-                            .toggleStyle(CheckboxToggleStyle())
-
-                            Spacer()
-
-                            Button("¿Olvidaste tu contraseña?") { /* noop (demo) */ }
-                                .font(.footnote.weight(.semibold))
-                                .buttonStyle(.plain)
-                                .foregroundStyle(Color.brandBlue)
-                        }
-                        .padding(.top, 2)
-
-                        // Entrar
-                        Button(action: { Task { await vm.submit() } }) {
-                            HStack {
-                                if vm.isLoading { ProgressView() }
-                                Text("Entrar")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .disabled(!vm.canSubmit || vm.isLoading)
-                        .padding(.top, 8)
-                        .accessibilityIdentifier("login_enter_button")
-
-                        // Error global
-                        if let error = vm.formError {
-                            Text(error)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                                .padding(.top, 4)
-                        }
-
-                        Spacer(minLength: 24)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
                 }
             }
-            .navigationBarHidden(true)
+            .alert("Email or password incorrect", isPresented: $showAuthError){
+                Button("OK", role: .cancel){}
+            }
+            .onAppear {
+                vm.onSuccess = {
+                    isAuthenticated = true
+                    goToMain = true
+                }
+            }
         }
-        .onAppear { vm.onSuccess = { isAuthenticated = true } }
     }
 }
 
-// MARK: - ViewModel
+// MARK: - ViewModel y demás quedan IGUAL
 
-// Hardcoded credentials para hackathon (usuario o correo + contraseña)
 private struct DemoAuth {
     struct Cred { let user: String; let email: String?; let password: String }
     static let allowed: [Cred] = [
         .init(user: "demo",       email: "demo@hackmty.app",    password: "1234"),
         .init(user: "pablo",      email: "pablo@hackmty.app",   password: "1234"),
-        .init(user: "admin",      email: "admin@bank.com",      password: "123456"),
+        .init(user: "admin",      email: "admin@bank.com",      password: "1234"),
         .init(user: "cliente123", email: "cliente123@bank.com", password: "1234")
     ]
 }
 
 @MainActor
 final class LoginViewModel: ObservableObject {
-    // Inputs
     @Published var username: String = ""
     @Published var password: String = ""
     @Published var rememberMe: Bool = false
 
-    // UI State
     @Published var isLoading: Bool = false
     @Published var formError: String? = nil
 
-    // Callback
     var onSuccess: (() -> Void)?
 
-    // Validation
     var canSubmit: Bool { usernameError == nil && passwordError == nil && !username.isEmpty && !password.isEmpty }
 
     var usernameError: String? {
         guard !username.isEmpty else { return nil }
         if username.contains("@") {
-            // Validación de correo (regex cruda para evitar escapes)
             let pattern = #"[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"#
             let pred = NSPredicate(format: "SELF MATCHES %@", pattern)
             return pred.evaluate(with: username) ? nil : "Correo inválido"
         } else {
-            return username.count >= 3 ? nil : "Mínimo 3 caracteres"
+            return username.count >= 3 ? nil : "At least 3 characters"
         }
     }
 
     var passwordError: String? {
         guard !password.isEmpty else { return nil }
-        return password.count >= 4 ? nil : "Mínimo 4 caracteres"
+        return password.count >= 4 ? nil : "At least 4 characters"
     }
 
-    // Simulación de login hardcodeado
     func submit() async {
         guard canSubmit else { return }
         isLoading = true
@@ -200,19 +191,21 @@ final class LoginViewModel: ObservableObject {
                 throw AuthError.invalidCredentials
             }
         } catch {
-            formError = (error as? AuthError)?.localizedDescription ?? "No se pudo iniciar sesión. Intenta de nuevo."
+            formError = (error as? AuthError)?.localizedDescription ?? "Couldn't log in, please try again"
         }
         isLoading = false
     }
 
-    enum AuthError: LocalizedError { case invalidCredentials
+    enum AuthError: LocalizedError {
+        case invalidCredentials
         var errorDescription: String? {
-            switch self { case .invalidCredentials: return "Credenciales incorrectas" }
+            switch self {
+            case .invalidCredentials:
+                return "Credenciales incorrectas"
+            }
         }
     }
 }
-
-// MARK: - Components
 
 struct IconTextField: View {
     var placeholder: String
@@ -235,8 +228,10 @@ struct IconTextField: View {
                 .submitLabel(.next)
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(.systemBackground)))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color.border, lineWidth: 1)
@@ -280,27 +275,15 @@ struct PasswordField: View {
             .accessibilityLabel(isSecure ? "Mostrar contraseña" : "Ocultar contraseña")
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(.systemBackground)))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color.border, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
-    }
-}
-
-struct FieldErrorLabel: View {
-    var message: String
-    init(_ message: String) { self.message = message }
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill").imageScale(.small)
-            Text(message)
-        }
-        .font(.footnote)
-        .foregroundStyle(.red)
-        .padding(.leading, 2)
     }
 }
 
@@ -331,13 +314,12 @@ struct CheckboxToggleStyle: ToggleStyle {
     }
 }
 
-// MARK: - Colors & Preview
-
 extension Color {
-    static let brandBlue = Color(red: 0.06, green: 0.38, blue: 1.0) // primary action
+    static let brandBlue = Color(red: 0.06, green: 0.38, blue: 1.0)
     static let border = Color(.systemGray4)
 }
 
 #Preview {
     LoginView()
 }
+
