@@ -7,14 +7,6 @@
 
 import SwiftUI
 
-struct Transaction2{
-    let id = UUID()
-    let chargeName: String
-    let timestamp: Date
-    let amount: Double
-    let location: String
-}
-
 struct SwipeView: View {
     @State private var transactions: [Transaction] = [
         Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza"),
@@ -28,6 +20,15 @@ struct SwipeView: View {
     @State private var currentIndex = 0
     @State private var offset = CGSize.zero
     @State private var rotation: Double = 0
+    @State private var alignedCount = 0
+    @State private var regretCount = 0
+    @State private var isCompleted = false
+    @State private var actionHistory: [SwipeAction] = []
+    
+    enum SwipeAction {
+        case aligned
+        case regret
+    }
     
     var body: some View {
         ZStack {
@@ -35,35 +36,60 @@ struct SwipeView: View {
             Color.black.opacity(0.1)
                 .ignoresSafeArea()
             
-            VStack {
-                // Header
-                headerView
-                
-                Spacer()
-                
-                // Card Stack
-                cardStackView
-                
-                Spacer()
-                
-                // Action Buttons
-                actionButtonsView
-                
-                Spacer()
+            if isCompleted {
+                completionView
+            } else {
+                VStack {
+                    // Header
+                    headerView
+                    
+                    Spacer()
+                    
+                    // Card Stack
+                    cardStackView
+                    
+                    Spacer()
+                    
+                    // Action Buttons
+                    actionButtonsView
+                    
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
         }
     }
     
     var headerView: some View {
         VStack {
-            Text("Review Transaction2s")
+            Text("Review Transactions")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
             Text("\(transactions.count - currentIndex) transactions remaining")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            
+            // Undo button
+            if currentIndex > 0 && !actionHistory.isEmpty {
+                Button(action: {
+                    undoLastAction()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.uturn.left")
+                        Text("Undo")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                }
+                .padding(.top, 8)
+            }
         }
     }
     
@@ -135,6 +161,76 @@ struct SwipeView: View {
         }
     }
     
+    var completionView: some View {
+        VStack(spacing: 30) {
+            // Celebration animation
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.green)
+                .scaleEffect(1.2)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).repeatCount(1, autoreverses: false), value: isCompleted)
+            
+            // Well done message
+            Text("Well Done!")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            // Statistics
+            VStack(spacing: 20) {
+                Text("Session Results")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 50) {
+                    // Regret count
+                    VStack {
+                        Text("\(regretCount)")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.red)
+                        Text("Regrets")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                    }
+                    
+                    // Aligned count
+                    VStack {
+                        Text("\(alignedCount)")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.green)
+                        Text("Aligned")
+                            .font(.headline)
+                            .foregroundColor(.green)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                )
+            }
+            
+            // Reset button
+            Button(action: {
+                resetSession()
+            }) {
+                Text("Start New Session")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
+        }
+        .padding()
+    }
+    
     private func handleSwipeGesture(translation: CGSize) {
         let swipeThreshold: CGFloat = 100
         
@@ -158,15 +254,22 @@ struct SwipeView: View {
             rotation = -20
         }
         
+        regretCount += 1
+        actionHistory.append(.regret)
+        print("Swiped LEFT (Regret): \(transactions[currentIndex].chargeName)")
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if currentIndex < transactions.count - 1 {
-                currentIndex += 1
-            }
+            currentIndex += 1
             offset = .zero
             rotation = 0
+            
+            // Check if we've completed all transactions
+            if currentIndex >= transactions.count {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                    isCompleted = true
+                }
+            }
         }
-        
-        print("Swiped LEFT (Regret): \(transactions[currentIndex].chargeName)")
     }
     
     private func swipeRight() {
@@ -176,15 +279,56 @@ struct SwipeView: View {
             rotation = 20
         }
         
+        alignedCount += 1
+        actionHistory.append(.aligned)
+        print("Swiped RIGHT (Aligned): \(transactions[currentIndex].chargeName)")
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if currentIndex < transactions.count - 1 {
-                currentIndex += 1
-            }
+            currentIndex += 1
             offset = .zero
             rotation = 0
+            
+            // Check if we've completed all transactions
+            if currentIndex >= transactions.count {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                    isCompleted = true
+                }
+            }
+        }
+    }
+    
+    private func undoLastAction() {
+        guard currentIndex > 0, !actionHistory.isEmpty else { return }
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentIndex -= 1
+            offset = .zero
+            rotation = 0
+            isCompleted = false
         }
         
-        print("Swiped RIGHT (Aligned): \(transactions[currentIndex].chargeName)")
+        // Revert the last action's count
+        let lastAction = actionHistory.removeLast()
+        switch lastAction {
+        case .aligned:
+            alignedCount -= 1
+            print("Undid ALIGNED action for: \(transactions[currentIndex].chargeName)")
+        case .regret:
+            regretCount -= 1
+            print("Undid REGRET action for: \(transactions[currentIndex].chargeName)")
+        }
+    }
+    
+    private func resetSession() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            currentIndex = 0
+            alignedCount = 0
+            regretCount = 0
+            isCompleted = false
+            offset = .zero
+            rotation = 0
+            actionHistory.removeAll()
+        }
     }
 }
 
