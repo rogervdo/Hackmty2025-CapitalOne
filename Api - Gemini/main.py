@@ -36,11 +36,20 @@ def ask_gemini(prompt: str = Body(..., embed=True)):
             "Supermercado 🛒; Hogar 🏠; Salud ⚕️; Educación 📚; Deporte 🏋️‍♀️; "
             "Tecnología 💻; Moda 👕; Cuidado Personal 💄; Mascotas 🐾; "
             "Regalos 🎁; Ahorros 📈; Bancos 🏦; Efectivo 🏧; Hobbies 🎮; Automóvil 🛠️; "
-            "Por defecto 🏷️. Devuelve solo el emoji correspondiente a: "
+            "Por defecto 🏷️. Devuelve el emoji correspondiente y ademas su categoria en formato json"
+            "solamente esos dos datos: "
             f"{prompt}"
         )
         response = model.generate_content(base_prompt)
-        return {"emoji": response.text.strip()}
+
+        response = model.generate_content(base_prompt)
+        
+        # Limpiamos la respuesta de posibles saltos de línea
+        text = response.text.strip()
+
+        # Retornamos directamente en el formato deseado
+        return {"emoji": text.split('"emoji":')[1].split(',')[0].replace('"','').strip(),
+                "categoria": text.split('"categoria":')[1].split('}')[0].replace('"','').strip()}
     except Exception as e:
         return {"error": str(e)}
 
