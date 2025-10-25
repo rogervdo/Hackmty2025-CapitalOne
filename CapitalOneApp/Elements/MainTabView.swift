@@ -10,17 +10,17 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-//            DashboardView()
-//                .tabItem {
-//                    Image(systemName: "house.fill")
-//                    Text("Dashboard")
-//                }
-//            
-//            MovimientosView()
-//                .tabItem {
-//                    Image(systemName: "list.bullet")
-//                    Text("Movimientos")
-//                }
+            DashboardView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Dashboard")
+                }
+           
+            MovimientosView()
+                .tabItem {
+                   Image(systemName: "list.bullet")
+                   Text("Movimientos")
+               }
             
             CoachView()
                 .tabItem {

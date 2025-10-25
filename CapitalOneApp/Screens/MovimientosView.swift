@@ -1,5 +1,5 @@
 //
-//  Movements.swift
+//  MovimientosView.swift
 //  CapitalOneApp
 //
 //  Created by Rogelio Villarreal on 10/25/25.
@@ -22,7 +22,7 @@ struct Movement: Identifiable, Hashable {
 }
 
 // MARK: - Main Movements View
-struct MovementsView: View {
+struct MovimientosView: View {
     
     // Sample Data
     let movements: [Movement] = [
@@ -76,7 +76,7 @@ struct MovementsView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     
                     // HEADER
-                    Text("Transaction")
+                    Text("Transactions")
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -146,7 +146,7 @@ struct MovementRow: View {
             
             Spacer()
             
-            // Amount and badge
+            // Amount and tag
             VStack(alignment: .trailing, spacing: 8) {
                 Text(movement.amount)
                     .font(.system(size: 18, weight: .semibold))
@@ -397,8 +397,8 @@ struct BulletRow: View {
 }
 
 // MARK: - Previews
-#Preview("MovementsView") {
-    MovementsView()
+#Preview("MovimientosView") {
+    MovimientosView()
 }
 
 #Preview("MovementDetailView") {
