@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ConfettiSwiftUI
 
 struct SwipeView: View {
     @State private var transactions: [Transaction] = [
@@ -24,6 +25,8 @@ struct SwipeView: View {
     @State private var regretCount = 0
     @State private var isCompleted = false
     @State private var actionHistory: [SwipeAction] = []
+    
+    @State private var trigger = 0
     
     enum SwipeAction {
         case aligned
@@ -58,6 +61,7 @@ struct SwipeView: View {
                 .padding()
             }
         }
+        .confettiCannon(trigger: $trigger, num:30, confettiSize: 15, radius:400)
     }
     
     var headerView: some View {
@@ -268,6 +272,10 @@ struct SwipeView: View {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                     isCompleted = true
                 }
+                // Trigger confetti celebration
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    trigger += 1
+                }
             }
         }
     }
@@ -292,6 +300,10 @@ struct SwipeView: View {
             if currentIndex >= transactions.count {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                     isCompleted = true
+                }
+                // Trigger confetti celebration
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    trigger += 1
                 }
             }
         }

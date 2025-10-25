@@ -16,11 +16,11 @@ struct MainTabView: View {
 //                    Text("Dashboard")
 //                }
 //            
-//            MovimientosView()
-//                .tabItem {
-//                    Image(systemName: "list.bullet")
-//                    Text("Movimientos")
-//                }
+            MovementsView()
+                .tabItem {
+                    Image(systemName: "list.bullet")
+                    Text("Movimientos")
+                }
             
             CoachView()
                 .tabItem {
