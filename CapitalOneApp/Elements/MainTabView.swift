@@ -18,7 +18,7 @@ struct MainTabView: View {
            
             MovimientosView()
                 .tabItem {
-                   Image(systemName: "list.bullet")
+                   Image(systemName: "receipt.fill")
                    Text("Movs")
                }
             
@@ -34,10 +34,10 @@ struct MainTabView: View {
                     Text("Transfer")
                 }
             
-            SwipeView()
+            PerfilView()
                 .tabItem {
-                    Image(systemName: "info.circle.fill")
-                    Text("Details")
+                    Image(systemName: "person.circle.fill")
+                    Text("Perfil")
                 }
         }
     }
