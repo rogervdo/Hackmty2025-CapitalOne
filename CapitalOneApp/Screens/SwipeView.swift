@@ -10,12 +10,12 @@ import ConfettiSwiftUI
 
 struct SwipeView: View {
     @State private var transactions: [Transaction] = [
-        Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza"),
-        Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport"),
-        Transaction(chargeName: "Target", timestamp: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center"),
-        Transaction(chargeName: "Netflix Subscription", timestamp: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online"),
-        Transaction(chargeName: "Gas Station", timestamp: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station"),
-        Transaction(chargeName: "Restaurant", timestamp: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden")
+        Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza", emoji: "☕"),
+        Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport", emoji: "🚗"),
+        Transaction(chargeName: "Target", timestamp: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center", emoji: "🛍️"),
+        Transaction(chargeName: "Netflix Subscription", timestamp: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online", emoji: "🎥"),
+        Transaction(chargeName: "Gas Station", timestamp: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station", emoji: "⛽️"),
+        Transaction(chargeName: "Restaurant", timestamp: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden", emoji: "🍽️")
     ]
     
     @State private var currentIndex = 0
@@ -29,9 +29,11 @@ struct SwipeView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            Color.black.opacity(0.1)
+            // Dynamic glowing background based on swipe direction
+            Rectangle()
+                .fill(backgroundGlow)
                 .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.2), value: offset.width)
             
             if isCompleted {
                 completionView
@@ -56,6 +58,45 @@ struct SwipeView: View {
             }
         }
         .confettiCannon(trigger: $trigger, num:30, confettiSize: 15, radius:400)
+    }
+    
+    // Computed property for dynamic background glow
+    private var backgroundGlow: LinearGradient {
+        let swipeThreshold: CGFloat = 30
+        let maxGlow: CGFloat = 0.3
+        
+        if offset.width > swipeThreshold {
+            // Swiping right - green glow
+            let intensity = min(abs(offset.width - swipeThreshold) / 100, 1.0) * maxGlow
+            return LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.black.opacity(0.1), location: 0.0),
+                    .init(color: Color.green.opacity(intensity * 0.3), location: 0.7),
+                    .init(color: Color.green.opacity(intensity), location: 1.0)
+                ]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else if offset.width < -swipeThreshold {
+            // Swiping left - red glow
+            let intensity = min(abs(offset.width + swipeThreshold) / 100, 1.0) * maxGlow
+            return LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.red.opacity(intensity), location: 0.0),
+                    .init(color: Color.red.opacity(intensity * 0.3), location: 0.3),
+                    .init(color: Color.black.opacity(0.1), location: 1.0)
+                ]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else {
+            // Default state - subtle background
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.black.opacity(0.1)]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
     }
     
     var headerView: some View {
@@ -265,7 +306,7 @@ struct SwipeView: View {
         
         regretCount += 1
         
-        // Log the swipe action with transaction details
+        // Log the swipe action with Transaction.category
         print("🔴 SWIPE LEFT (Regret)")
         print("   Transaction: \(transactions[currentIndex].chargeName)")
         print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
@@ -314,7 +355,7 @@ struct SwipeView: View {
         
         alignedCount += 1
         
-        // Log the swipe action with transaction details
+        // Log the swipe action with Transaction.category
         print("🟢 SWIPE RIGHT (Align)")
         print("   Transaction: \(transactions[currentIndex].chargeName)")
         print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
@@ -465,92 +506,203 @@ struct Transaction2CardView: View {
         return formatter
     }
     
+    // Dynamic gradient based on amount
+    private var amountGradient: LinearGradient {
+        let intensity = min(transaction.amount / 100.0, 1.0)
+        return LinearGradient(
+            gradient: Gradient(colors: [
+                Color.green.opacity(0.8 + intensity * 0.2),
+                Color.mint.opacity(0.6 + intensity * 0.4)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header with charge name
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(transaction.chargeName)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 0) {
+            // Modern header with glassmorphism effect
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(transaction.chargeName)
+                            .font(.system(.title2, design: .rounded, weight: .bold))
+                            .foregroundStyle(.primary)
+                        
+                        Text(transaction.category ?? "Uncategorized")
+                            .font(.system(.caption, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                     
-                    Text("Transaction Details")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Spacer()
+                    
+                    // Modern amount display with gradient
+                    Text("$\(String(format: "%.2f", transaction.amount))")
+                        .font(.system(.title, design: .rounded, weight: .heavy))
+                        .foregroundStyle(amountGradient)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background {
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .overlay {
+                                    Capsule()
+                                        .stroke(amountGradient, lineWidth: 1)
+                                }
+                        }
                 }
-                
-                Spacer()
-                
-                // Amount
-                Text("$\(String(format: "%.2f", transaction.amount))")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.green)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
             
-            Divider()
+            // Elegant separator
+            Rectangle()
+                .fill(.quaternary)
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            // Transaction details
-            VStack(spacing: 15) {
-                DetailRow(icon: "calendar", title: "Date & Time", value: dateFormatter.string(from: transaction.timestamp))
-                DetailRow(icon: "location", title: "Location", value: transaction.location!)
-                DetailRow(icon: "creditcard", title: "Amount", value: "$\(String(format: "%.2f", transaction.amount))")
+            // Transaction.category with modern styling
+            VStack(spacing: 16) {
+                ModernDetailRow(icon: "calendar", title: "Date & Time", 
+                              value: dateFormatter.string(from: transaction.timestamp))
+                ModernDetailRow(icon: "location.fill", title: "Location", 
+                              value: transaction.location ?? "Unknown")
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            
+            Spacer()
+            
+            // Enhanced emoji display with backdrop
+            if let emoji = transaction.emoji {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 160, height: 160)
+                        .overlay {
+                            Circle()
+                                .stroke(.quaternary, lineWidth: 1)
+                        }
+                    
+                    Text(emoji)
+                        .font(.system(size: 80))
+                        .scaleEffect(1.1)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
             }
             
             Spacer()
             
-            // Swipe hints
+            // Modern swipe hints with glass effect
             HStack {
-                Label("Regret", systemImage: "arrow.left")
-                    .font(.caption)
-                    .foregroundColor(.red)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.left")
+                        .font(.system(.caption, weight: .semibold))
+                    Text("Regret")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                }
+                .foregroundStyle(.red)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background {
+                    Capsule()
+                        .fill(.red.opacity(0.1))
+                        .overlay {
+                            Capsule()
+                                .stroke(.red.opacity(0.3), lineWidth: 1)
+                        }
+                }
                 
                 Spacer()
                 
-                Label("Aligned", systemImage: "arrow.right")
-                    .font(.caption)
-                    .foregroundColor(.green)
+                HStack(spacing: 6) {
+                    Text("Aligned")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                    Image(systemName: "arrow.right")
+                        .font(.system(.caption, weight: .semibold))
+                }
+                .foregroundStyle(.green)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background {
+                    Capsule()
+                        .fill(.green.opacity(0.1))
+                        .overlay {
+                            Capsule()
+                                .stroke(.green.opacity(0.3), lineWidth: 1)
+                        }
+                }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
         }
-        .padding(25)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-        )
+        .background {
+            // Modern card background with subtle gradient and glass effect
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.ultraThickMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: .white.opacity(0.2), location: 0.0),
+                                    .init(color: .clear, location: 0.3),
+                                    .init(color: .clear, location: 0.7),
+                                    .init(color: .black.opacity(0.1), location: 1.0)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 0.5)
+                }
+                .shadow(color: .black.opacity(0.12), radius: 20, x: 0, y: 8)
+                .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 1)
+        }
     }
 }
 
-struct DetailRow: View {
+// Modern detail row component
+struct ModernDetailRow: View {
     let icon: String
     let title: String
     let value: String
     
     var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(.blue)
-                .frame(width: 20)
+        HStack(spacing: 14) {
+            // Icon with background
+            ZStack {
+                Circle()
+                    .fill(.quaternary.opacity(0.5))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: icon)
+                    .font(.system(.caption, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
             
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(.secondary)
+                
+                Text(value)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
             
             Spacer()
-            
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.medium)
         }
     }
 }
+
+
 
 // Preview
 #Preview {
