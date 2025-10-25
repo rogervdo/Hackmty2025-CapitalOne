@@ -13,12 +13,14 @@ struct Meta: Codable, Identifiable{
     let metaName: String
     let duration: Int
     let startDate: Date
+    let completed: Bool
     
-    init(id: UUID = UUID(), amount: Int, metaName: String, duration: Int, startDate: Date){
+    init(id: UUID = UUID(), amount: Int, metaName: String, duration: Int, startDate: Date, completed: Bool){
         self.id = id
         self.amount = amount
         self.metaName = metaName
         self.duration = duration
         self.startDate = startDate
+        self.completed = completed
     }
 }
