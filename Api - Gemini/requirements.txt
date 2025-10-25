@@ -1,8 +1,4 @@
-services:
-  - type: web
-    name: capitalone-gemini-api
-    env: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    publishPath: .   # porque render.yaml está dentro de Api - Gemini
-
+fastapi
+uvicorn
+mysql-connector-python
+google-generativeai
