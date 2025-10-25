@@ -259,6 +259,7 @@ struct SwipeView: View {
             amount: transactions[currentIndex].amount,
             location: transactions[currentIndex].location,
             category: transactions[currentIndex].category,
+            emoji: transactions[currentIndex].emoji,
             aligned: "regret"
         )
         
@@ -307,6 +308,7 @@ struct SwipeView: View {
             amount: transactions[currentIndex].amount,
             location: transactions[currentIndex].location,
             category: transactions[currentIndex].category,
+            emoji: transactions[currentIndex].emoji,
             aligned: "align"
         )
         
@@ -362,6 +364,7 @@ struct SwipeView: View {
             amount: transactions[previousIndex].amount,
             location: transactions[previousIndex].location,
             category: transactions[previousIndex].category,
+            emoji: transactions[previousIndex].emoji,
             aligned: nil
         )
         
@@ -404,6 +407,7 @@ struct SwipeView: View {
                     amount: transactions[i].amount,
                     location: transactions[i].location,
                     category: transactions[i].category,
+                    emoji: transactions[i].emoji,
                     aligned: nil
                 )
             }

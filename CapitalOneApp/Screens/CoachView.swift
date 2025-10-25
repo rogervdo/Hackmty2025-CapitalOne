@@ -16,6 +16,7 @@ struct CoachView: View {
     @State private var metaSemanal: Double = 1800
     @State private var progress: Double = 0.37
     @State private var impactoTotal: Double = 614
+    @State private var unsortedTransactions: Int = 6
     
     var total: Double {
         necesarios + innecesarios
@@ -38,6 +39,9 @@ struct CoachView: View {
                     
                     // Spending Overview Card
                     spendingOverviewCard
+                    
+                    // Unsorted Transactions Card
+                    unsortedTransactionsCard
                     
                     // Savings Goal Card
                     savingsGoalCard
@@ -174,6 +178,196 @@ struct CoachView: View {
         .padding(20)
         .background(Color(.systemBackground))
         .cornerRadius(16)
+    }
+    
+    // MARK: - Unsorted Transactions Card
+    private var unsortedTransactionsCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header with achievement-style messaging
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.7)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "target")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("🎯 Quick Challenge")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Complete \(unsortedTransactions) swipes to unlock insights")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Mini progress badge
+                VStack(spacing: 2) {
+                    Text("\(unsortedTransactions)")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                    Text("left")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+            }
+            
+            // Progress bar showing completion
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Progress to Next Level")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text("Level up your financial insights")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .fontWeight(.medium)
+                }
+                
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 8)
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: 120 * (1.0 - Double(unsortedTransactions) / 10.0), height: 8)
+                        .animation(.easeInOut(duration: 0.3), value: unsortedTransactions)
+                }
+            }
+            
+            // Gamified action button
+            NavigationLink(destination: SwipeView()) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Image(systemName: "gamecontroller.fill")
+                                .foregroundColor(.white)
+                                .font(.subheadline)
+                            
+                            Text("Start Mission")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                        }
+                        
+                        Text("Swipe to categorize • 2 min avg")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(spacing: 4) {
+                        Image(systemName: "chevron.right.2")
+                            .foregroundColor(.white)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        
+                        Text("GO")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(8)
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8), Color.red.opacity(0.6)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Achievement preview
+            HStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.caption)
+                    Text("+50 XP")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .foregroundColor(.blue)
+                        .font(.caption)
+                    Text("Better insights")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Text("🏆 Unlock rewards")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .fontWeight(.medium)
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(20)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color(.systemBackground), Color.orange.opacity(0.02)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange.opacity(0.4), Color.orange.opacity(0.2)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
+        )
+        .shadow(color: Color.orange.opacity(0.1), radius: 8, x: 0, y: 4)
     }
     
     // MARK: - Opportunities Section

@@ -19,7 +19,7 @@ struct MainTabView: View {
             MovimientosView()
                 .tabItem {
                    Image(systemName: "list.bullet")
-                   Text("Movimientos")
+                   Text("Movs")
                }
             
             CoachView()
@@ -31,7 +31,7 @@ struct MainTabView: View {
             PagosView()
                 .tabItem {
                     Image(systemName: "creditcard.fill")
-                    Text("Pagos")
+                    Text("Transfer")
                 }
             
             SwipeView()
