@@ -34,11 +34,11 @@ struct MenuBar: View {
                     Text("Pagos")
                 }
             
-//            DetailsView()
-//                .tabItem {
-//                    Image(systemName: "info.circle.fill")
-//                    Text("Details")
-//                }
+            SwipeView()
+                .tabItem {
+                    Image(systemName: "info.circle.fill")
+                    Text("Details")
+                }
         }
     }
 }
