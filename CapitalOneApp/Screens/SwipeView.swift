@@ -6,14 +6,7 @@
 //
 
 import SwiftUI
-
-struct Transaction2{
-    let id = UUID()
-    let chargeName: String
-    let timestamp: Date
-    let amount: Double
-    let location: String
-}
+import ConfettiSwiftUI
 
 struct SwipeView: View {
     @State private var transactions: [Transaction] = [
@@ -28,6 +21,11 @@ struct SwipeView: View {
     @State private var currentIndex = 0
     @State private var offset = CGSize.zero
     @State private var rotation: Double = 0
+    @State private var alignedCount = 0
+    @State private var regretCount = 0
+    @State private var isCompleted = false
+    
+    @State private var trigger = 0
     
     var body: some View {
         ZStack {
@@ -35,35 +33,61 @@ struct SwipeView: View {
             Color.black.opacity(0.1)
                 .ignoresSafeArea()
             
-            VStack {
-                // Header
-                headerView
-                
-                Spacer()
-                
-                // Card Stack
-                cardStackView
-                
-                Spacer()
-                
-                // Action Buttons
-                actionButtonsView
-                
-                Spacer()
+            if isCompleted {
+                completionView
+            } else {
+                VStack {
+                    // Header
+                    headerView
+                    
+                    Spacer()
+                    
+                    // Card Stack
+                    cardStackView
+                    
+                    Spacer()
+                    
+                    // Action Buttons
+                    actionButtonsView
+                    
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
         }
+        .confettiCannon(trigger: $trigger, num:30, confettiSize: 15, radius:400)
     }
     
     var headerView: some View {
         VStack {
-            Text("Review Transaction2s")
+            Text("Review Transactions")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
             Text("\(transactions.count - currentIndex) transactions remaining")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            
+            // Undo button
+            if currentIndex > 0 && transactions.prefix(currentIndex).contains(where: { $0.aligned != nil }) {
+                Button(action: {
+                    undoLastAction()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.uturn.left")
+                        Text("Undo")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                }
+                .padding(.top, 8)
+            }
         }
     }
     
@@ -79,7 +103,6 @@ struct SwipeView: View {
                         )
                         .scaleEffect(index == currentIndex ? 1.0 : 0.95 - CGFloat(index - currentIndex) * 0.05)
                         .rotationEffect(.degrees(index == currentIndex ? rotation : 0))
-                        .opacity(index == currentIndex ? 1.0 : 0.8 - Double(index - currentIndex) * 0.2)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: offset)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: currentIndex)
                         .gesture(
@@ -135,6 +158,76 @@ struct SwipeView: View {
         }
     }
     
+    var completionView: some View {
+        VStack(spacing: 30) {
+            // Celebration animation
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.green)
+                .scaleEffect(1.2)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).repeatCount(1, autoreverses: false), value: isCompleted)
+            
+            // Well done message
+            Text("Well Done!")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            // Statistics
+            VStack(spacing: 20) {
+                Text("Session Results")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 50) {
+                    // Regret count
+                    VStack {
+                        Text("\(regretCount)")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.red)
+                        Text("Regrets")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                    }
+                    
+                    // Aligned count
+                    VStack {
+                        Text("\(alignedCount)")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.green)
+                        Text("Aligned")
+                            .font(.headline)
+                            .foregroundColor(.green)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                )
+            }
+            
+            // Reset button
+            Button(action: {
+                resetSession()
+            }) {
+                Text("Start New Session")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
+        }
+        .padding()
+    }
+    
     private func handleSwipeGesture(translation: CGSize) {
         let swipeThreshold: CGFloat = 100
         
@@ -158,15 +251,45 @@ struct SwipeView: View {
             rotation = -20
         }
         
+        // Update the transaction's aligned property
+        transactions[currentIndex] = Transaction(
+            id: transactions[currentIndex].id,
+            chargeName: transactions[currentIndex].chargeName,
+            timestamp: transactions[currentIndex].timestamp,
+            amount: transactions[currentIndex].amount,
+            location: transactions[currentIndex].location,
+            category: transactions[currentIndex].category,
+            aligned: "regret"
+        )
+        
+        regretCount += 1
+        
+        // Log the swipe action with transaction details
+        print("🔴 SWIPE LEFT (Regret)")
+        print("   Transaction: \(transactions[currentIndex].chargeName)")
+        print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
+        print("   Aligned Value: regret")
+        print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
+        print("   Timestamp: \(transactions[currentIndex].timestamp)")
+        print("---")
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if currentIndex < transactions.count - 1 {
-                currentIndex += 1
-            }
+            currentIndex += 1
             offset = .zero
             rotation = 0
+            
+            // Check if we've completed all transactions
+            if currentIndex >= transactions.count {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                    isCompleted = true
+                }
+                // Trigger confetti celebration and log session results
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    trigger += 1
+                    logSessionResults()
+                }
+            }
         }
-        
-        print("Swiped LEFT (Regret): \(transactions[currentIndex].chargeName)")
     }
     
     private func swipeRight() {
@@ -176,15 +299,155 @@ struct SwipeView: View {
             rotation = 20
         }
         
+        // Update the transaction's aligned property
+        transactions[currentIndex] = Transaction(
+            id: transactions[currentIndex].id,
+            chargeName: transactions[currentIndex].chargeName,
+            timestamp: transactions[currentIndex].timestamp,
+            amount: transactions[currentIndex].amount,
+            location: transactions[currentIndex].location,
+            category: transactions[currentIndex].category,
+            aligned: "align"
+        )
+        
+        alignedCount += 1
+        
+        // Log the swipe action with transaction details
+        print("🟢 SWIPE RIGHT (Align)")
+        print("   Transaction: \(transactions[currentIndex].chargeName)")
+        print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
+        print("   Aligned Value: align")
+        print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
+        print("   Timestamp: \(transactions[currentIndex].timestamp)")
+        print("---")
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if currentIndex < transactions.count - 1 {
-                currentIndex += 1
-            }
+            currentIndex += 1
             offset = .zero
             rotation = 0
+            
+            // Check if we've completed all transactions
+            if currentIndex >= transactions.count {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                    isCompleted = true
+                }
+                // Trigger confetti celebration and log session results
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    trigger += 1
+                    logSessionResults()
+                }
+            }
+        }
+    }
+    
+    private func undoLastAction() {
+        guard currentIndex > 0 else { return }
+        
+        // Find the most recent transaction with an aligned value
+        let previousIndex = currentIndex - 1
+        guard let previousAligned = transactions[previousIndex].aligned else { return }
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentIndex -= 1
+            offset = .zero
+            rotation = 0
+            isCompleted = false
         }
         
-        print("Swiped RIGHT (Aligned): \(transactions[currentIndex].chargeName)")
+        // Revert the transaction's aligned property
+        transactions[previousIndex] = Transaction(
+            id: transactions[previousIndex].id,
+            chargeName: transactions[previousIndex].chargeName,
+            timestamp: transactions[previousIndex].timestamp,
+            amount: transactions[previousIndex].amount,
+            location: transactions[previousIndex].location,
+            category: transactions[previousIndex].category,
+            aligned: nil
+        )
+        
+        // Revert the count based on what was undone
+        switch previousAligned {
+        case "align":
+            alignedCount -= 1
+            print("↩️ UNDO ACTION")
+            print("   Transaction: \(transactions[previousIndex].chargeName)")
+            print("   Previous Aligned Value: align → nil")
+            print("   Amount: $\(String(format: "%.2f", transactions[previousIndex].amount))")
+            print("---")
+        case "regret":
+            regretCount -= 1
+            print("↩️ UNDO ACTION")
+            print("   Transaction: \(transactions[previousIndex].chargeName)")
+            print("   Previous Aligned Value: regret → nil")
+            print("   Amount: $\(String(format: "%.2f", transactions[previousIndex].amount))")
+            print("---")
+        default:
+            break
+        }
+    }
+    
+    private func resetSession() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            currentIndex = 0
+            alignedCount = 0
+            regretCount = 0
+            isCompleted = false
+            offset = .zero
+            rotation = 0
+            
+            // Reset all transactions' aligned property
+            for i in transactions.indices {
+                transactions[i] = Transaction(
+                    id: transactions[i].id,
+                    chargeName: transactions[i].chargeName,
+                    timestamp: transactions[i].timestamp,
+                    amount: transactions[i].amount,
+                    location: transactions[i].location,
+                    category: transactions[i].category,
+                    aligned: nil
+                )
+            }
+        }
+    }
+    
+    private func logSessionResults() {
+        print("\n🎉 SESSION COMPLETED! 🎉")
+        print("========================")
+        print("📊 FINAL SESSION RESULTS:")
+        print("   Total Transactions: \(transactions.count)")
+        print("   Aligned: \(alignedCount)")
+        print("   Regrets: \(regretCount)")
+        print("========================")
+        print("\n📋 ALL TRANSACTIONS WITH ALIGNED VALUES:")
+        print("==========================================")
+        
+        for (index, transaction) in transactions.enumerated() {
+            let alignedStatus = transaction.aligned ?? "unprocessed"
+            let emoji = transaction.aligned == "align" ? "🟢" : transaction.aligned == "regret" ? "🔴" : "⚪"
+            
+            print("\(index + 1). \(emoji) \(transaction.chargeName)")
+            print("   Amount: $\(String(format: "%.2f", transaction.amount))")
+            print("   Location: \(transaction.location ?? "Unknown")")
+            print("   Aligned Value: \(alignedStatus)")
+            print("   Date: \(transaction.timestamp)")
+            print("   ID: \(transaction.id)")
+            print("   ---")
+        }
+        
+        print("==========================================")
+        print("🔥 SESSION SUMMARY ARRAY:")
+        let sessionSummary = transactions.map { transaction in
+            return [
+                "chargeName": transaction.chargeName,
+                "amount": transaction.amount,
+                "aligned": transaction.aligned ?? "unprocessed",
+                "location": transaction.location ?? "Unknown",
+                "id": transaction.id.uuidString
+            ]
+        }
+        
+        print(sessionSummary)
+        print("==========================================\n")
     }
 }
 
