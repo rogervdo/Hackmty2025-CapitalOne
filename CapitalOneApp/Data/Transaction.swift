@@ -8,16 +8,21 @@
 import Foundation
 
 struct Transaction: Codable, Identifiable {
-    var id: UUID { UUID() }
-    let name: String
-    let amount: Decimal
+    let id: UUID
+    let chargeName: String
     let timestamp: Date
+    let amount: Double
     let location: String?
+    let category: String?
+    let aligned: String?
     
-    init(name: String, amount: Decimal, timestamp: Date = Date(), location: String? = nil) {
-        self.name = name
-        self.amount = amount
+    init(id: UUID = UUID(), chargeName: String, timestamp: Date = Date(), amount: Double, location: String? = nil, category: String? = nil, aligned: String? = nil) {
+        self.id = id
+        self.chargeName = chargeName
         self.timestamp = timestamp
+        self.amount = amount
         self.location = location
+        self.category = category
+        self.aligned = aligned
     }
 }

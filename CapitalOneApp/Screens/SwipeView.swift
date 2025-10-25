@@ -7,22 +7,22 @@
 
 import SwiftUI
 
-struct Transaction2 {
+struct Transaction2{
     let id = UUID()
     let chargeName: String
-    let date: Date
+    let timestamp: Date
     let amount: Double
     let location: String
 }
 
 struct SwipeView: View {
-    @State private var transactions: [Transaction2] = [
-        Transaction2(chargeName: "Starbucks Coffee", date: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza"),
-        Transaction2(chargeName: "Uber Ride", date: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport"),
-        Transaction2(chargeName: "Target", date: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center"),
-        Transaction2(chargeName: "Netflix Subscription", date: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online"),
-        Transaction2(chargeName: "Gas Station", date: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station"),
-        Transaction2(chargeName: "Restaurant", date: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden")
+    @State private var transactions: [Transaction] = [
+        Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza"),
+        Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport"),
+        Transaction(chargeName: "Target", timestamp: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center"),
+        Transaction(chargeName: "Netflix Subscription", timestamp: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online"),
+        Transaction(chargeName: "Gas Station", timestamp: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station"),
+        Transaction(chargeName: "Restaurant", timestamp: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden")
     ]
     
     @State private var currentIndex = 0
@@ -189,7 +189,7 @@ struct SwipeView: View {
 }
 
 struct Transaction2CardView: View {
-    let transaction: Transaction2
+    let transaction: Transaction
     
     private var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -208,7 +208,7 @@ struct Transaction2CardView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
-                    Text("Transaction2 Details")
+                    Text("Transaction Details")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -224,10 +224,10 @@ struct Transaction2CardView: View {
             
             Divider()
             
-            // Transaction2 details
+            // Transaction details
             VStack(spacing: 15) {
-                DetailRow(icon: "calendar", title: "Date & Time", value: dateFormatter.string(from: transaction.date))
-                DetailRow(icon: "location", title: "Location", value: transaction.location)
+                DetailRow(icon: "calendar", title: "Date & Time", value: dateFormatter.string(from: transaction.timestamp))
+                DetailRow(icon: "location", title: "Location", value: transaction.location!)
                 DetailRow(icon: "creditcard", title: "Amount", value: "$\(String(format: "%.2f", transaction.amount))")
             }
             
