@@ -132,12 +132,14 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 **Load seed**
 ```bash
+
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS CapitalOne;"
 mysql -u root -p CapitalOne < backend/HackMTYCapitalOne2025.sql
 
 # Optional: dedicated app user
 mysql -u root -p -e "CREATE USER IF NOT EXISTS 'cappie_user'@'%' IDENTIFIED BY 'change_me';
 GRANT ALL ON CapitalOne.* TO 'cappie_user'@'%'; FLUSH PRIVILEGES;"
+
 ```
 
 ## 👥 Team
