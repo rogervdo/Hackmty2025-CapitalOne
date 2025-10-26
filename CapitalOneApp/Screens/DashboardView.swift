@@ -33,6 +33,63 @@ struct DashboardMovement: Identifiable {
     let tagColor: Color
 }
 
+// MARK: - Date Formatting Helper
+extension String {
+    func toUserFriendlyDate() -> String {
+        // Common date formats that might come from the API
+        let dateFormats = [
+            "yyyy-MM-dd'T'HH:mm:ss",      // ISO 8601 without timezone (matches your API format)
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",  // ISO 8601 with milliseconds, no timezone
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ", // ISO 8601 with milliseconds and timezone
+            "yyyy-MM-dd'T'HH:mm:ssZ",     // ISO 8601 with timezone
+            "yyyy-MM-dd HH:mm:ss",        // Standard format
+            "yyyy-MM-dd",                 // Date only
+            "MM/dd/yyyy",                 // US format
+            "dd/MM/yyyy"                  // International format
+        ]
+        
+        let dateFormatter = DateFormatter()
+        
+        // Try to parse the date with different formats
+        for format in dateFormats {
+            dateFormatter.dateFormat = format
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX") // Use POSIX locale for parsing
+            dateFormatter.timeZone = TimeZone.current // Use current timezone
+            
+            if let date = dateFormatter.date(from: self) {
+                // Format to user-friendly format in English
+                let outputFormatter = DateFormatter()
+                outputFormatter.locale = Locale(identifier: "en_US") // English locale for output
+                outputFormatter.timeZone = TimeZone.current
+                
+                // Check if it's today, yesterday, or this week
+                let calendar = Calendar.current
+                let now = Date()
+                
+                if calendar.isDateInToday(date) {
+                    outputFormatter.dateFormat = "'Today at' h:mm a"
+                } else if calendar.isDateInYesterday(date) {
+                    outputFormatter.dateFormat = "'Yesterday at' h:mm a"
+                } else if calendar.dateInterval(of: .weekOfYear, for: now)?.contains(date) == true {
+                    outputFormatter.dateFormat = "EEEE 'at' h:mm a" // e.g., "Monday at 2:30 PM"
+                } else if calendar.isDate(date, equalTo: now, toGranularity: .year) {
+                    outputFormatter.dateFormat = "MMM d 'at' h:mm a" // e.g., "Oct 15 at 2:30 PM"
+                } else {
+                    outputFormatter.dateFormat = "MMM d, yyyy" // e.g., "Oct 15, 2023"
+                }
+                
+                return outputFormatter.string(from: date)
+            }
+        }
+        
+        // Debug: print the original string to see what format we're getting
+        print("⚠️ Could not parse date format: '\(self)'")
+        
+        // If no format worked, return the original string
+        return self
+    }
+}
+
 // para el pie chart
 struct CategorySlice: Identifiable {
     let id = UUID()
@@ -117,7 +174,8 @@ struct DashboardView: View {
                         }
                     }()
                     
-                    let subtitleText = "\(g.timeStamp) · \(g.location)"
+                    let friendlyDate = g.timeStamp.toUserFriendlyDate()
+                    let subtitleText = "\(friendlyDate) · \(g.location)"
                     
                     return DashboardMovement(
                         emoji: "💳", // temp mientras llega el emoji real
