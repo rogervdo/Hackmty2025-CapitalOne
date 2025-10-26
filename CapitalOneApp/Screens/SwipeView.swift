@@ -871,7 +871,7 @@ struct SwipeView: View {
     }
 
     private func updateTransactionUtility(transactionId: Int, utilityValue: String) {
-        guard let url = URL(string: "http://127.0.0.1:8000/swipe/update") else {
+        guard let url = URL(string: "https://unitycampus.onrender.com/swipe/update") else {
             print("❌ Invalid URL for swipe update")
             return
         }

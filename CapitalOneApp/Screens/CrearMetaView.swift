@@ -100,7 +100,7 @@ struct CrearMetaView: View {
         isLoading = true
         logger.info("🔄 Loading state set to true")
         
-        guard let url = URL(string: "http://127.0.0.1:8000/metas") else {
+        guard let url = URL(string: "https://unitycampus.onrender.com/metas") else {
             logger.error("❌ Invalid URL")
             errorMessage = "URL inválida"
             showingError = true
