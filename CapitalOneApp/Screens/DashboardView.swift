@@ -1,10 +1,3 @@
-//
-//  DashboardView.swift
-//  CapitalOneApp
-//
-//  Created by Rogelio Villarreal on 10/25/25.
-//
-
 import SwiftUI
 
 // MARK: - Movement model
@@ -20,6 +13,8 @@ struct DashboardMovement: Identifiable {
 
 // MARK: - Dashboard View
 struct DashboardView: View {
+    
+    @Binding var selectedTab: Int   // 🔥 added
     
     let recentMovements: [DashboardMovement] = [
         DashboardMovement(emoji: "🍔", title: "Uber Eats", subtitle: "Hoy 12:24 · Centro", amount: "$160", tag: "Regret", tagColor: .red),
@@ -81,14 +76,20 @@ struct DashboardView: View {
                     
                     VStack(spacing: 12) {
                         ForEach(recentMovements.prefix(5)) { mov in
-                            DashboardMovementRow(movement: mov)
+                            Button {
+                                // 🔥 go to Movs tab (index 1)
+                                selectedTab = 1
+                            } label: {
+                                DashboardMovementRow(movement: mov)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
                 .padding(.horizontal, 16)
                 
                 // CARD: Coach financiero
-                CoachCard()
+                CoachCard(selectedTab: $selectedTab)   // 🔥 pass binding
                     .padding(.horizontal, 16)
                 
                 Spacer(minLength: 32)
@@ -108,7 +109,7 @@ private struct BalanceCard: View {
                     LinearGradient(
                         colors: [
                             Color(red: 32/255, green: 79/255, blue: 1.0),
-                            Color(red: 25/255, green: 60/255, blue: 0.9)
+                        Color(red: 25/255, green: 60/255, blue: 0.9)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -116,7 +117,6 @@ private struct BalanceCard: View {
                 )
                 .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
             
-            // círculos suaves decorativos
             Circle()
                 .fill(Color.white.opacity(0.15))
                 .frame(width: 180, height: 180)
@@ -335,6 +335,8 @@ private struct DashboardMovementRow: View {
 
 // MARK: - Coach Card
 private struct CoachCard: View {
+    @Binding var selectedTab: Int   // 🔥 added
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -350,18 +352,24 @@ private struct CoachCard: View {
                     .foregroundColor(.white.opacity(0.9))
             }
             
-            HStack(spacing: 8) {
-                Image(systemName: "figure.walk.circle.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color.green)
-                Text("Abrir Coach")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color.green)
-                Spacer()
+            Button {
+                // 🔥 go straight to Coach tab (index 2)
+                selectedTab = 2
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "figure.walk.circle.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Color.green)
+                    Text("Abrir Coach")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Color.green)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(
@@ -390,6 +398,6 @@ private struct CoachCard: View {
 
 // MARK: - Preview
 #Preview {
-    DashboardView()
+    // preview with a constant binding
+    DashboardView(selectedTab: .constant(0))
 }
-
