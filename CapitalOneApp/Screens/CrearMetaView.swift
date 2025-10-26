@@ -30,12 +30,12 @@ struct CrearMetaView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Crear Nueva Meta")
+            Text("Create a new Goal")
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.top)
             
-            Text("Describe tu meta financiera")
+            Text("Describe your financial goal")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
@@ -50,7 +50,7 @@ struct CrearMetaView: View {
                 )
                 .padding(.horizontal)
             
-            Text("Ejemplo: \"Quiero ahorrar $5000 para comprar una laptop en 3 meses\"")
+            Text("Example: \"I want to save $2000 to buy a laptop in 3 months\"")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.horizontal)
@@ -61,7 +61,7 @@ struct CrearMetaView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
-                    Text("Crear Meta")
+                    Text("Create goal")
                 }
             }
             .disabled(promptText.isEmpty || isLoading)
@@ -74,7 +74,7 @@ struct CrearMetaView: View {
             
             Spacer()
         }
-        .navigationTitle("Nueva Meta")
+        .navigationTitle("New GOal")
         .navigationBarTitleDisplayMode(.large)
         .alert("Error", isPresented: $showingError) {
             Button("OK", role: .cancel) { }
@@ -236,12 +236,12 @@ struct GoalCreatedSuccessView: View {
                             .font(.system(size: 80))
                             .foregroundColor(.green)
                         
-                        Text("¡Meta Creada Exitosamente!")
+                        Text("¡New Goal Created Sucessfully!")
                             .font(.title)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.center)
                         
-                        Text("Tu nueva meta financiera ha sido configurada")
+                        Text("Your new goal has been configured")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -250,49 +250,49 @@ struct GoalCreatedSuccessView: View {
                     
                     // Goal details card
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("Detalles de tu Meta")
+                        Text("Goal Details")
                             .font(.headline)
                             .fontWeight(.semibold)
                         
                         VStack(spacing: 16) {
                             DetailRow(
                                 icon: "target",
-                                title: "Nombre",
+                                title: "Name",
                                 value: goal.nombre_meta,
                                 color: .blue
                             )
                             
                             DetailRow(
                                 icon: "text.alignleft",
-                                title: "Descripción",
+                                title: "Description",
                                 value: goal.descripcion,
                                 color: .purple
                             )
                             
                             DetailRow(
                                 icon: "dollarsign.circle.fill",
-                                title: "Monto Objetivo",
+                                title: "Amount objective",
                                 value: currencyFormatter.string(from: NSNumber(value: goal.goal_amount)) ?? "$\(Int(goal.goal_amount))",
                                 color: .green
                             )
                             
                             DetailRow(
                                 icon: "tag.fill",
-                                title: "Tipo",
+                                title: "Type",
                                 value: goal.tipo.capitalized,
                                 color: .orange
                             )
                             
                             DetailRow(
                                 icon: "calendar",
-                                title: "Fecha de Inicio",
+                                title: "Start Date",
                                 value: startDate != nil ? dateFormatter.string(from: startDate!) : goal.start_date,
                                 color: .mint
                             )
                             
                             DetailRow(
                                 icon: "calendar.badge.checkmark",
-                                title: "Fecha Límite",
+                                title: "Deadline",
                                 value: endDate != nil ? dateFormatter.string(from: endDate!) : goal.end_date,
                                 color: .red
                             )
@@ -311,22 +311,17 @@ struct GoalCreatedSuccessView: View {
                         VStack(spacing: 12) {
                             TipRow(
                                 icon: "chart.line.uptrend.xyaxis",
-                                tip: "Revisa tu progreso semanalmente para mantenerte en el camino correcto"
-                            )
-                            
-                            TipRow(
-                                icon: "creditcard.fill",
-                                tip: "Considera automatizar tus ahorros para facilitar el proceso"
+                                tip: "Check your progress weekly to stay on track"
                             )
                             
                             TipRow(
                                 icon: "bell.fill",
-                                tip: "Configura recordatorios para mantener tu disciplina financiera"
+                                tip: "Configure reminders to keep you motivated"
                             )
                             
                             TipRow(
                                 icon: "person.2.fill",
-                                tip: "Comparte tu meta con amigos o familiares para mayor compromiso"
+                                tip: "Share your goal with your family and friends"
                             )
                         }
                     }
@@ -338,7 +333,7 @@ struct GoalCreatedSuccessView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            .navigationTitle("Meta Creada")
+            .navigationTitle("Goal Created")
             .navigationBarTitleDisplayMode(.large)
             .navigationBarBackButtonHidden()
             .toolbar {
