@@ -182,46 +182,53 @@ struct CoachView: View {
     
     // MARK: - Unsorted Transactions Card
     private var unsortedTransactionsCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(
-                            gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.7)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-                        .frame(width: 48, height: 48)
+        NavigationLink(destination: SwipeView().gesture(DragGesture().onChanged { _ in })) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 48, height: 48)
+                        
+                        Image(systemName: "target")
+                            .foregroundColor(.white)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                    }
                     
-                    Image(systemName: "target")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("🎯 Quick Challenge")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("🎯 Quick Challenge")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        Text("Complete \(metrics?.unsortedTransactions ?? 0) swipes to unlock insights")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("Complete \(metrics?.unsortedTransactions ?? 0) swipes to unlock insights")
-                        .font(.subheadline)
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)
+                        .font(.subheadline)
                 }
-                
-                Spacer()
             }
-        }
-        .padding(20)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color(.systemBackground), Color.orange.opacity(0.02)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+            .padding(20)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(.systemBackground), Color.orange.opacity(0.02)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
-        )
-        .cornerRadius(16)
+            .cornerRadius(16)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Opportunities Section

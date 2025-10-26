@@ -9,6 +9,7 @@ import SwiftUI
 import ConfettiSwiftUI
 
 struct SwipeView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var transactions: [Transaction] = [
         Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza", emoji: "☕"),
         Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport", emoji: "🚗"),
@@ -250,21 +251,41 @@ struct SwipeView: View {
                 )
             }
             
-            // Reset button
-            Button(action: {
-                resetSession()
-            }) {
-                Text("Start New Session")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
+            // Action buttons
+            VStack(spacing: 16) {
+                // Reset button
+                Button(action: {
+                    resetSession()
+                }) {
+                    Text("Start New Session")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 40)
+                
+                // Back to Coach button
+                Button(action: {
+                    dismiss()
+                }) {
+                    Text("Back to Coach")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue, lineWidth: 2)
+                                .fill(Color.clear)
+                        )
+                }
+                .padding(.horizontal, 40)
             }
-            .padding(.horizontal, 40)
-            .padding(.top, 20)
         }
         .padding()
     }
