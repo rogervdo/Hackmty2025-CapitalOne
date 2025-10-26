@@ -37,7 +37,7 @@ struct PreferenciasView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .medium))
-                        Text("Preferencias del Coach")
+                        Text("Coach Preferences")
                             .font(.title2)
                             .fontWeight(.bold)
                     }
@@ -49,7 +49,7 @@ struct PreferenciasView: View {
     
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Personaliza tu experiencia")
+            Text("Personalize your experience")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.top, 20)
@@ -71,12 +71,12 @@ struct PreferenciasView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Coach Financiero")
+                    Text("Financial Coach")
                         .font(.title2)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text("El coach te ayuda a alcanzar tus metas mediante sugerencias personalizadas. Ajusta cómo quieres recibir estas recomendaciones.")
+                    Text("Your Coach will help your reach your goals through personalized suggestions. Adjust how you wish to recieve these recommendations.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .lineLimit(nil)
@@ -102,7 +102,7 @@ struct PreferenciasView: View {
     
     private var coachModeSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Modo del Coach")
+            Text("Coach Mode")
                 .font(.title2)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -110,8 +110,8 @@ struct PreferenciasView: View {
             VStack(spacing: 12) {
                 CoachModeRow(
                     mode: .relajado,
-                    title: "Relajado",
-                    description: "Sugerencias ocasionales, sin presión",
+                    title: "Relaxed",
+                    description: "Occasional suggestions, without pressure",
                     isSelected: selectedCoachMode == .relajado
                 ) {
                     selectedCoachMode = .relajado
@@ -120,7 +120,7 @@ struct PreferenciasView: View {
                 CoachModeRow(
                     mode: .normal,
                     title: "Normal",
-                    description: "Balance entre seguimiento y flexibilidad",
+                    description: "Balance between follow-ups and flexibility",
                     isSelected: selectedCoachMode == .normal
                 ) {
                     selectedCoachMode = .normal
@@ -128,8 +128,8 @@ struct PreferenciasView: View {
                 
                 CoachModeRow(
                     mode: .estricto,
-                    title: "Estricto",
-                    description: "Monitoreo activo y sugerencias frecuentes",
+                    title: "Strict",
+                    description: "Active monitoring and frequent suggestions",
                     isSelected: selectedCoachMode == .estricto
                 ) {
                     selectedCoachMode = .estricto
@@ -142,7 +142,7 @@ struct PreferenciasView: View {
     
     private var infoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("¿Qué significa esto?")
+            Text("What does this mean?")
                 .font(.title3)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,14 +198,14 @@ struct PreferenciasView: View {
         
         switch selectedCoachMode {
         case .relajado:
-            baseString = "En modo Relajado, recibirás 1-2 sugerencias por semana"
-            boldWord = "Relajado"
+            baseString = "In Relaxed mode, you'll recieve 1-2 suggestions per week."
+            boldWord = "Relaxed"
         case .normal:
-            baseString = "En modo Normal, recibirás 3-5 sugerencias por semana"
-            boldWord = "Normal"
+            baseString = "In Normal mode, you'll recieve 3-5 suggestions per week."
+            boldWord = "Strict"
         case .estricto:
-            baseString = "En modo Estricto, recibirás 5+ sugerencias por semana"
-            boldWord = "Estricto"
+            baseString = "In Strict mode, you'll recieve 5+ suggestions per week."
+            boldWord = "Strict"
         }
         
         var attributedString = AttributedString(baseString)
@@ -225,35 +225,35 @@ struct PreferenciasView: View {
     private func getSecondBulletPoint() -> String {
         switch selectedCoachMode {
         case .relajado:
-            return "Las notificaciones serán diarias resumidas"
+            return "Notifications would be summarized daily"
         case .normal:
-            return "Las notificaciones serán diarias resumidas"
+            return "Notifications would be summarized daily"
         case .estricto:
-            return "Las notificaciones serán inmediatas"
+            return "Notifications would be immediate"
         }
     }
     
     private var metasActivasSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Tus metas activas")
+            Text("Your active goals")
                 .font(.title2)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(spacing: 0) {
                 MetaRow(
-                    title: "Meta de ahorro",
+                    title: "Spending goal",
                     subtitle: "$25,000 • 30 nov 2025",
-                    status: "Activa"
+                    status: "Active"
                 )
                 
                 Divider()
                     .padding(.horizontal, 20)
                 
                 MetaRow(
-                    title: "Cap discrecional semanal",
+                    title: "Discretional spending amount",
                     subtitle: "$1,000/semana",
-                    status: "Activa"
+                    status: "Active"
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
