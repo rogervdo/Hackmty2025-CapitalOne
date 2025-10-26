@@ -4,7 +4,7 @@ import mysql.connector
 from datetime import datetime
 
 # Configuración de Gemini AI
-genai.configure(api_key="AIzaSyDVgPRUANWZ63UJV6LYjzB8HSrAdzPPtAs")
+genai.configure(api_key="AIzaSyCJcYHhgkph3yo5uJnrOkEHxw3OgWSGhWc")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 # Configuración de la base de datos
@@ -381,4 +381,45 @@ def update_transaction_utility(
     except Exception as e:
         if "conn" in locals() and conn.is_connected():
             conn.close()
+        return {"error": str(e)}
+
+    # ------------------------------
+
+
+# Endpoint para obtener gastos no clasificados para SwipeView
+
+
+# Endpoint para obtener metas de un usuario
+
+
+# ------------------------------
+
+
+@app.get("/metas/{user_id}")
+def obtener_metas_usuario(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT 
+                idMeta,
+                nombre_meta,
+                descripcion,
+                goal_amount,
+                tipo,
+                start_date,
+                end_date
+            FROM 
+                Metas
+            WHERE 
+                user = %s
+            ORDER BY 
+                start_date DESC
+        """
+        cursor.execute(query, (user_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"metas": results}
+    except Exception as e:
         return {"error": str(e)}

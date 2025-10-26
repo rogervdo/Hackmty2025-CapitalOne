@@ -539,7 +539,7 @@ struct MetaView: View {
     
     private func fetchUserGoalsFromAPI() async -> [GoalFromAPI] {
         return await withCheckedContinuation { continuation in
-            guard let url = URL(string: "https://unitycampus.onrender.com/metas/\(userId)") else {
+            guard let url = URL(string: "http://127.0.0.1:8000/metas/\(userId)") else {
                 print("❌ Invalid URL for goals endpoint")
                 continuation.resume(returning: [])
                 return

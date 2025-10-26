@@ -369,7 +369,7 @@ struct DetailRow: View {
                     .font(.body)
                     .fontWeight(.medium)
             }
-            
+        
             Spacer()
         }
     }
