@@ -63,7 +63,6 @@ A **Financial Coach** inside a banking app that turns transactions into **simple
 | **Database** | **MySQL 8** | Tables: `Usuario`, `Gastos`, `Metas`. Seed/Dump: `backend/HackMTYCapitalOne2025.sql`. |
 | **AI (NLG)** | **Google Gemini API** | Suggestions, emoji categorization, goal creation from prompt. |
 | **Connector** | `mysql-connector-python` | MySQL access from FastAPI. |
-| **Infra/Dev** | (Optional) Docker Compose | Local orchestration: API + DB. |
 | **Design** | Figma (Capital One vibe) | Palette: Blue `#004481`, Red `#D10000`, Background `#F5F7FA`. |
 
 ---
@@ -160,12 +159,12 @@ GRANT ALL ON CapitalOne.* TO 'cappie_user'@'%'; FLUSH PRIVILEGES;"
 
 </div>
 
-| Role | Name | GitHub | Contact | Responsibilities |
+| Role | Name | GitHub | Contact | 
 |---|---|---|---|---|
-| Backend Lead | Angel Muñoz | [@zamer22](https://github.com/PabloZL27) | <email@example.com> | FastAPI API, MySQL, endpoints, Gemini prompts |
-| Backend Lead | Rogelio Villareal | [@rogervdo](https://github.com/user) | <email@example.com> | Endpoints, Gemini prompts, SwiftUI views, Coach flow, envelope |
-| Design / UI / SwiftUI | Bryan Meza | [@Bryan-Meza](https://github.com/user) | <email@example.com> | Figma, Capital One palette, components, SwiftUI views |
-| Design / UI / SwiftUI | Pablo Zapata | [@PabloZL27](https://github.com/user) | <email@example.com> | Figma, Capital One palette, components, SwiftUI views |
+| Backend Lead | Angel Muñoz | [@zamer22](https://github.com/PabloZL27) | <angelaamunoza@gmail.com> | 
+| Backend Lead | Rogelio Villareal | [@rogervdo](https://github.com/user) | <rogervdo@icloud.com> | 
+| Design / UI / SwiftUI | Bryan Meza | [@Bryan-Meza](https://github.com/user) | <bryan.albertolemus9@gmail.com> | 
+| Design / UI / SwiftUI | Pablo Zapata | [@PabloZL27](https://github.com/user) | <Pablo.ZZLL@hotmail.com> | 
 
 ---
 
