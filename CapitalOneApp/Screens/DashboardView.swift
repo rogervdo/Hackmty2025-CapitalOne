@@ -232,7 +232,7 @@ struct DashboardView: View {
                 
                 // Header
                 HStack(alignment: .top) {
-                    Text("Inicio")
+                    Text("Home")
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.primary)
                     Spacer()
@@ -254,15 +254,15 @@ struct DashboardView: View {
                 // ROW: Dos cards pequeñas (dummy por ahora)
                 HStack(spacing: 12) {
                     SmallStatCard(
-                        title: "Cap discrecional",
+                        title: "Discretional spending cap",
                         value: "$1,000",
-                        subtitleTop: "Rebasado en $240",
+                        subtitleTop: "$240 over",
                         subtitleColor: .red
                     )
                     SmallStatCard(
-                        title: "Proyección meta",
+                        title: "Goal Projection",
                         value: "12 ene",
-                        subtitleTop: "Con hábitos actuales",
+                        subtitleTop: "With current habits",
                         subtitleColor: .secondary
                     )
                 }
@@ -274,7 +274,7 @@ struct DashboardView: View {
                 
                 // Lista: Movimientos recientes
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Movimientos recientes")
+                    Text("Recent transactions")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -431,7 +431,7 @@ private struct CategoryPieCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Gasto por categoría")
+                Text("Spending by category")
                     .font(.system(size: 17, weight: .semibold))
                 Spacer()
             }
@@ -441,7 +441,7 @@ private struct CategoryPieCard: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .progressViewStyle(.circular)
-                    Text("Cargando categorías…")
+                    Text("Loading categories...")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -531,7 +531,7 @@ private struct BalanceCard: View {
                 .offset(x: 70, y: 40)
             
             VStack(alignment: .leading, spacing: 12) {
-                Text("Saldo total")
+                Text("Total funds")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.8))
                 
@@ -541,7 +541,7 @@ private struct BalanceCard: View {
                 
                 HStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Cheques")
+                        Text("Checks")
                             .font(.system(size: 14))
                             .foregroundColor(Color.white.opacity(0.8))
                         Text("$18,420")
@@ -549,7 +549,7 @@ private struct BalanceCard: View {
                             .foregroundColor(.white)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Ahorro")
+                        Text("Savings")
                             .font(.system(size: 14))
                             .foregroundColor(Color.white.opacity(0.8))
                         Text("$12,300")
@@ -597,13 +597,13 @@ private struct SmallStatCard: View {
 private struct QuickActionsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Acciones rápidas")
+            Text("Quick actions")
                 .font(.system(size: 17, weight: .semibold))
             
             HStack(spacing: 12) {
-                QuickActionButton(title: "Transferir", systemIcon: "arrow.right.arrow.left.circle.fill")
-                QuickActionButton(title: "Pagar\nservicio", systemIcon: "creditcard.circle.fill")
-                QuickActionButton(title: "Enviar", systemIcon: "paperplane.circle.fill")
+                QuickActionButton(title: "Transfer", systemIcon: "arrow.right.arrow.left.circle.fill")
+                QuickActionButton(title: "Pay\nService", systemIcon: "creditcard.circle.fill")
+                QuickActionButton(title: "Send", systemIcon: "paperplane.circle.fill")
             }
         }
         .padding(16)
@@ -653,11 +653,11 @@ private struct CoachCard: View {
                 HStack(spacing: 8) {
                     Text("💡")
                         .font(.system(size: 20))
-                    Text("Ahorra más esta semana")
+                    Text("Save more this weekend")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.white)
                 }
-                Text("Descubre oportunidades para alcanzar tu meta antes")
+                Text("Discover opportunities to reach your savings goals faster.")
                     .font(.system(size: 15))
                     .foregroundColor(.white.opacity(0.9))
             }
@@ -669,7 +669,7 @@ private struct CoachCard: View {
                     Image(systemName: "figure.walk.circle.fill")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Color.green)
-                    Text("Abrir Coach")
+                    Text("Open CapiCoach")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(Color.green)
                     Spacer()

@@ -74,7 +74,7 @@ struct MetaView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     if isLoading {
-                        ProgressView("Cargando metas...")
+                        ProgressView("Loading goals...")
                             .frame(maxWidth: .infinity, minHeight: 200)
                     } else if goalsWithMetrics.isEmpty {
                         // Empty state
@@ -83,12 +83,12 @@ struct MetaView: View {
                                 .font(.system(size: 50))
                                 .foregroundColor(.gray)
                             
-                            Text("No tienes metas activas")
+                            Text("You dont have active goals")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.secondary)
                             
-                            Text("Crea tu primera meta para comenzar a ahorrar")
+                            Text("Create your first goal to start saving towards")
                                 .font(.body)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -96,7 +96,7 @@ struct MetaView: View {
                             NavigationLink(destination: CrearMetaView()) {
                                 HStack {
                                     Image(systemName: "plus.circle.fill")
-                                    Text("Crear Meta")
+                                    Text("Create Goal")
                                 }
                                 .font(.headline)
                                 .foregroundColor(.white)
@@ -129,7 +129,7 @@ struct MetaView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Mis Metas")
+            .navigationTitle("My goals")
             .navigationBarTitleDisplayMode(.large)
             .navigationBarItems(trailing: NavigationLink(destination: CrearMetaView()) {
                 Image(systemName: "plus.circle.fill")
@@ -220,13 +220,13 @@ struct MetaView: View {
                     }
                     
                     HStack {
-                        Text("Quedan \(goalWithMetrics.daysRemaining) días")
+                        Text("You have \(goalWithMetrics.daysRemaining) days left")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
                         Spacer()
                         
-                        Text("$\(goalWithMetrics.suggestedDailyAmount)/día")
+                        Text("$\(goalWithMetrics.suggestedDailyAmount)/day")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -281,7 +281,7 @@ struct MetaView: View {
             // Progress Bar Section
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Progreso General")
+                    Text("General Progress")
                         .font(.headline)
                         .fontWeight(.semibold)
                     
@@ -312,7 +312,7 @@ struct MetaView: View {
                 // Amount progress
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Ahorrado")
+                        Text("Saved")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text("$\(Int(goal.goal_amount * metrics.progress))")
@@ -324,7 +324,7 @@ struct MetaView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("Meta Total")
+                        Text("Total Goal")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text("$\(Int(goal.goal_amount))")
@@ -341,7 +341,7 @@ struct MetaView: View {
             
             // Dates Section
             VStack(alignment: .leading, spacing: 12) {
-                Text("Cronograma")
+                Text("Cronogram")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
@@ -350,7 +350,7 @@ struct MetaView: View {
                         HStack {
                             Image(systemName: "calendar")
                                 .foregroundColor(.blue)
-                            Text("Inicio")
+                            Text("Start")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                         }
@@ -365,7 +365,7 @@ struct MetaView: View {
                     
                     VStack(alignment: .trailing, spacing: 6) {
                         HStack {
-                            Text("Meta")
+                            Text("Goal")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             Image(systemName: "flag.checkered")
@@ -383,13 +383,13 @@ struct MetaView: View {
                 HStack {
                     Image(systemName: "clock")
                         .foregroundColor(.purple)
-                    Text("Quedan \(goalWithMetrics.daysRemaining) días")
+                    Text("There are \(goalWithMetrics.daysRemaining) days remaining")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("Ahorro diario sugerido: $\(goalWithMetrics.suggestedDailyAmount)")
+                    Text("Daily suggested savings: $\(goalWithMetrics.suggestedDailyAmount)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -400,18 +400,18 @@ struct MetaView: View {
             
             // Cost Breakdown Section
             VStack(alignment: .leading, spacing: 12) {
-                Text("Análisis Financiero")
+                Text("Financial analysis")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 VStack(spacing: 8) {
-                    costRow(title: "Ahorrado", amount: Int(goal.goal_amount * metrics.progress), color: .green)
-                    costRow(title: "Falta por Ahorrar", amount: Int(goal.goal_amount * (1 - metrics.progress)), color: .orange)
+                    costRow(title: "Saved", amount: Int(goal.goal_amount * metrics.progress), color: .green)
+                    costRow(title: "Left to save", amount: Int(goal.goal_amount * (1 - metrics.progress)), color: .orange)
                     
                     Divider()
                     
-                    costRow(title: "Capacidad Semanal", amount: Int(metrics.capSemanal), color: .blue)
-                    costRow(title: "Meta Semanal", amount: Int(metrics.metaSemanal), color: .purple)
+                    costRow(title: "Weekly Capacity", amount: Int(metrics.capSemanal), color: .blue)
+                    costRow(title: "Weekly goal", amount: Int(metrics.metaSemanal), color: .purple)
                 }
             }
             .padding(16)
@@ -422,7 +422,7 @@ struct MetaView: View {
             // Tips section
             if !opportunities.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("💡 Tips para alcanzar tu meta")
+                    Text("💡 Tips to reach your goal")
                         .font(.headline)
                         .fontWeight(.semibold)
                     
