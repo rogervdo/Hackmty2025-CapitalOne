@@ -1,84 +1,72 @@
 from fastapi import FastAPI, Body
-from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import mysql.connector
 from datetime import datetime
 
-# Configuración de Gemini AI
-genai.configure(api_key="AIzaSyB9JIhKFx4cMnI55j2qGYGT1wFoUoeCGSw")
+
+genai.configure(api_key="AIzaSyAEiktqaOTWyEfgqyOn3rGaw7yv5Qb1lpI")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-# Configuración de la base de datos
+
 db_config = {
     "host": "capital-one-mysql-2a76c2d1-tec-a639.f.aivencloud.com",
     "user": "avnadmin",
     "password": "AVNS_aITyrcv-CLHDbOSVdTO",
-    "database": "CapitalOne",
+    "database": "CapitalOne",  
     "port": 21909,
 }
-
 
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
-
 app = FastAPI(title="CapitalOne + Gemini API", version="3.0")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (for development)
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
+from datetime import timedelta 
 
-
-# ------------------------------
-# Endpoint para crear usuario
-# ------------------------------
-@app.post("/usuarios")
-def crear_usuario(
-    user: str = Body(..., embed=True),
-    email: str = Body(..., embed=True),
+@app.post("/coach/{user_id}/summary")
+def get_coach_summary(
+    user_id: int, 
+    necesarios: float = Body(..., embed=True),
+    innecesarios: float = Body(..., embed=True),
+    impactoTotal: float = Body(..., embed=True),
+    goalName: str = Body(..., embed=True),
+    progress: float = Body(..., embed=True)
 ):
+    """
+    Usa Gemini para generar un resumen personalizado para el Coach View.
+    """
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        query = """
-            INSERT INTO Usuario (user, email)
-            VALUES (%s, %s)
+       
+        impacto_porcentaje = int((impactoTotal / innecesarios) * 100) if innecesarios > 0 else 0
+        
+        prompt_data = f"""
+        Como coach financiero, genera un mensaje corto (máximo 3 oraciones) para un usuario con las siguientes métricas semanales:
+        - Gasto Necesario: ${necesarios:.2f}
+        - Gasto Innecesario: ${innecesarios:.2f}
+        - Meta actual: {goalName}
+        - Progreso semanal de la meta: {int(progress * 100)}%
+        - Impacto potencial total (ahorro si aplica sugerencias): ${impactoTotal:.2f}
+        - Este impacto representa un {impacto_porcentaje}% de sus gastos innecesarios.
+
+        Instrucciones:
+        1. Compara su gasto innecesario con el impacto potencial.
+        2. Menciona la meta.
+        3. Termina con una frase de acción o motivación. and do it in english
         """
-        values = (user, email)
-        cursor.execute(query, values)
-        conn.commit()
-        user_id = cursor.lastrowid
-        cursor.close()
-        conn.close()
-        return {"message": "✅ Usuario creado correctamente.", "user_id": user_id}
+        
+  
+        response = model.generate_content(prompt_data)
+        summary = response.text.strip()
+
+        return {"summary": summary}
+
     except Exception as e:
+        
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para obtener usuarios
-# ------------------------------
-@app.get("/usuarios")
-def obtener_usuarios():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        query = "SELECT idUser, user, email FROM Usuario"
-        cursor.execute(query)
-        data = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return {"usuarios": data}
-    except Exception as e:
-        return {"error": str(e)}
 
 
-# ------------------------------
 @app.post("/emojis")
 def ask_gemini(prompt: str = Body(..., embed=True)):
     """
@@ -97,19 +85,13 @@ def ask_gemini(prompt: str = Body(..., embed=True)):
         response = model.generate_content(base_prompt)
         text = response.text.strip()
         return {
-            "emoji": text.split('"emoji":')[1].split(",")[0].replace('"', "").strip(),
-            "category": text.split('"category":')[1]
-            .split("}")[0]
-            .replace('"', "")
-            .strip(),
+            "emoji": text.split('"emoji":')[1].split(',')[0].replace('"','').strip(),
+            "category": text.split('"category":')[1].split('}')[0].replace('"','').strip()
         }
     except Exception as e:
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para nuevo gasto
-# ------------------------------
 @app.post("/gastos/nuevo")
 def nuevo_gasto(
     chargeName: str = Body(...),
@@ -117,7 +99,7 @@ def nuevo_gasto(
     location: str = Body(...),
     category: str = Body(...),
     utility: str = Body(...),
-    user: int = Body(...),
+    user: int = Body(...)
 ):
     try:
         conn = get_db_connection()
@@ -137,9 +119,6 @@ def nuevo_gasto(
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para obtener todos los gastos
-# ------------------------------
 @app.get("/gastos")
 def obtener_gastos():
     try:
@@ -170,9 +149,6 @@ def obtener_gastos():
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para obtener gastos de un usuario
-# ------------------------------
 @app.get("/gastos/{user_id}")
 def obtener_gastos_usuario(user_id: int):
     try:
@@ -202,78 +178,40 @@ def obtener_gastos_usuario(user_id: int):
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para obtener gastos de un usuario con utility NULL
-# ------------------------------
-@app.get("/gastos/{user_id}/utility-null")
-def obtener_gastos_usuario_utility_null(user_id: int):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        query = """
-            SELECT 
-                G.chargeName, 
-                G.amount, 
-                G.timeStamp, 
-                G.location,
-                G.category,
-                G.utility
-            FROM 
-                Gastos G
-            WHERE 
-                G.user = %s AND G.utility IS "not assigned"
-            ORDER BY 
-                G.timeStamp DESC
-        """
-        cursor.execute(query, (user_id,))
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return {"gastos": results}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ------------------------------
-# Endpoint Coach Metrics
-# ------------------------------
 @app.get("/coach/{user_id}")
 def coach_metrics(user_id: int):
-    """
-    Devuelve métricas y el nombre de la última meta para la vista Coach.
-    """
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Obtener gastos del usuario y calcular métricas
+
         cursor.execute("SELECT amount, utility FROM Gastos WHERE user=%s", (user_id,))
         gastos = cursor.fetchall()
+        
+        necesarios = sum(g['amount'] for g in gastos if g['utility'] == 'aligned')
+        innecesarios = sum(g['amount'] for g in gastos if g['utility'] == 'regret')
+        unsortedTransactions = sum(1 for g in gastos if g['utility'] == 'not assigned')
 
-        necesarios = sum(g["amount"] for g in gastos if g["utility"] == "aligned")
-        innecesarios = sum(g["amount"] for g in gastos if g["utility"] == "regret")
-        unsortedTransactions = sum(1 for g in gastos if g["utility"] == "not assigned")
 
-        # 2. Obtener solo el nombre y monto de la última meta (AQUÍ ESTÁ EL CAMBIO)
         cursor.execute(
-            "SELECT nombre_meta, goal_amount FROM Metas WHERE user=%s ORDER BY start_date DESC LIMIT 1",
-            (user_id,),
+            "SELECT nombre_meta, goal_amount FROM Metas WHERE user=%s ORDER BY start_date DESC LIMIT 1", 
+            (user_id,)
         )
         meta = cursor.fetchone()
+        
 
-        # 3. Asignar valores
-        # Usamos el monto de la meta (goal_amount) o un valor por defecto
-        metaSemanal = meta["goal_amount"] if meta and meta["goal_amount"] else 1800
-        capSemanal = necesarios  # Mantener la lógica existente
+        metaSemanal = meta['goal_amount'] if meta and meta['goal_amount'] else 1800
+        capSemanal = necesarios
 
         progress = min(necesarios / metaSemanal, 1) if metaSemanal > 0 else 0.37
-        impactoTotal = innecesarios * 0.5
-
-        # 4. Cerrar conexión
+        impactoTotal = innecesarios * 0.5 
+        
+        
         cursor.close()
         conn.close()
 
-        # 5. RETORNO FINAL (Solo incluye 'goalName')
+        
         return {
             "necesarios": necesarios,
             "innecesarios": innecesarios,
@@ -283,85 +221,58 @@ def coach_metrics(user_id: int):
             "unsortedTransactions": unsortedTransactions,
             "impactoTotal": impactoTotal,
             # CAMPO DE LA META
-            "goalName": meta["nombre_meta"] if meta else "No goal set",
+            "goalName": meta['nombre_meta'] if meta else "No goal set",
         }
     except Exception as e:
-        # Asegúrate de cerrar la conexión en caso de error
-        if "conn" in locals() and conn.is_connected():
+       
+        if 'conn' in locals() and conn.is_connected():
             conn.close()
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint Coach Opportunities
-# ------------------------------
 @app.get("/coach/{user_id}/opportunities")
 def coach_opportunities(user_id: int):
-    """
-    Devuelve oportunidades de ahorro para la vista Coach.
-    """
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute(
-            "SELECT chargeName, amount, category FROM Gastos WHERE user=%s AND utility='regret'",
-            (user_id,),
-        )
+        cursor.execute("SELECT chargeName, amount, category FROM Gastos WHERE user=%s AND utility='regret'", (user_id,))
         gastos_regret = cursor.fetchall()
         cursor.close()
         conn.close()
 
         opportunities = []
         for g in gastos_regret:
-            opportunities.append(
-                {
-                    "title": f"Gasto innecesario: {g['chargeName']}",
-                    "description": f"Este gasto de ${g['amount']} en {g['category']} podría haberse evitado.",
-                    "primaryAction": "Revisar gasto",
-                    "secondaryAction": "Establecer límite",
-                }
-            )
+            opportunities.append({
+                "title": f"Unnecessary expense: {g['chargeName']}",
+                "description": f"This ${g['amount']} expense in {g['category']} could have been avoided.",
+                "primaryAction": "Review expense",
+                "secondaryAction": "Set limit"
+            })
 
-        return {"opportunities": opportunities[:3]}  # limitar a 3 oportunidades
+        return {"opportunities": opportunities[:3]}  
     except Exception as e:
         return {"error": str(e)}
-
-
 @app.post("/metas")
-def crear_meta(
-    prompt: str = Body(..., embed=True), user_id: int = Body(..., embed=True)
-):
-    """
-    Crea una meta a partir de un prompt libre y la guarda en la base de datos.
-    """
+def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., embed=True)):
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Verificar que el usuario existe
-        cursor.execute("SELECT idUser FROM Usuario WHERE idUser = %s", (user_id,))
-        user_exists = cursor.fetchone()
-        if not user_exists:
-            cursor.close()
-            conn.close()
-            return {
-                "error": f"Usuario con id {user_id} no existe. Por favor, crea el usuario primero."
-            }
-
-        # Pedimos a Gemini que genere la meta en JSON estructurado
+        
         base_prompt = f"""
         Eres un asesor financiero. A partir del siguiente prompt del usuario:
         "{prompt}"
-
-        La fecha de inicio es hoy: {datetime.now().strftime("%Y-%m-%d")}
 
         Genera un JSON con esta estructura:
         {{
           "nombre_meta": "...",
           "descripcion": "...",
-          "goal_amount": INT,
+          "goal_amount": int,
           "tipo": "ahorro" o "reducción de gasto",
+          "start_date": "YYYY-MM-DD",
           "end_date": "YYYY-MM-DD"
         }}
         """
@@ -369,13 +280,9 @@ def crear_meta(
         meta_json = response.text.strip().replace("```json", "").replace("```", "")
 
         import json
-
         meta_data = json.loads(meta_json)
 
-        # Usar la fecha actual como start_date
-        start_date = datetime.now().strftime("%Y-%m-%d")
-
-        # Guardamos la meta en la base de datos
+     
         query = """
         INSERT INTO Metas (user, nombre_meta, descripcion, goal_amount, tipo, start_date, end_date)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -386,8 +293,8 @@ def crear_meta(
             meta_data["descripcion"],
             meta_data["goal_amount"],
             meta_data["tipo"],
-            start_date,
-            meta_data["end_date"],
+            meta_data["start_date"],
+            meta_data["end_date"]
         )
         cursor.execute(query, values)
         conn.commit()
@@ -395,60 +302,19 @@ def crear_meta(
         cursor.close()
         conn.close()
 
-        # Agregar la fecha de inicio a la respuesta
-        meta_data["start_date"] = start_date
-
         return {"message": "✅ Meta creada exitosamente", "meta": meta_data}
     except Exception as e:
         return {"error": str(e)}
 
 
-# ------------------------------
-# Endpoint para obtener metas de un usuario
-# ------------------------------
-@app.get("/metas/{user_id}")
-def obtener_metas_usuario(user_id: int):
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        query = """
-            SELECT 
-                idMeta,
-                nombre_meta,
-                descripcion,
-                goal_amount,
-                tipo,
-                start_date,
-                end_date
-            FROM 
-                Metas
-            WHERE 
-                user = %s
-            ORDER BY 
-                start_date DESC
-        """
-        cursor.execute(query, (user_id,))
-        results = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return {"metas": results}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ------------------------------
 @app.get("/swipe/unclassified/{user_id}")
 def get_unclassified_transactions(user_id: int):
-    """
-    Devuelve un máximo de 10 gastos no clasificados (utility='not assigned')
-    para el usuario especificado.
-    """
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
-        # Consulta para obtener hasta 10 transacciones del usuario que no han sido clasificadas
-        # Usamos G.id para que Swift tenga un ID único para la tarjeta
+        
+        
         query = """
             SELECT 
                 G.id,
@@ -468,55 +334,45 @@ def get_unclassified_transactions(user_id: int):
         """
         cursor.execute(query, (user_id,))
         results = cursor.fetchall()
-
+        
         cursor.close()
         conn.close()
-
-        # Formatea el timeStamp para que sea compatible con Swift (opcional, pero ayuda)
-        # y asegura que 'utility' se pase como el valor inicial 'not assigned'
+        
+        
         formatted_results = []
         for row in results:
-            formatted_results.append(
-                {
-                    "id": row["id"],
-                    "chargeName": row["chargeName"],
-                    "amount": row["amount"],
-                    "location": row["location"],
-                    "category": row["category"],
-                    "timestamp": row[
-                        "timeStamp"
-                    ].isoformat(),  # Convertir DATETIME a string ISO 8601
-                    "utility": row["utility"],  # Debería ser 'not assigned'
-                }
-            )
-
+            formatted_results.append({
+                "id": row['id'],
+                "chargeName": row['chargeName'],
+                "amount": row['amount'],
+                "location": row['location'],
+                "category": row['category'],
+                "timestamp": row['timeStamp'].isoformat(), 
+                "utility": row['utility'] 
+            })
+        
         return {"transactions": formatted_results}
-
+        
     except Exception as e:
-        # Asegúrate de cerrar la conexión en caso de error
-        if "conn" in locals() and conn.is_connected():
+        
+        if 'conn' in locals() and conn.is_connected():
             conn.close()
         return {"error": str(e)}
 
 
-# ------------------------------
-# NUEVO Endpoint para actualizar la utilidad después del swipe
-# ------------------------------
 @app.post("/swipe/update")
 def update_transaction_utility(
     transaction_id: int = Body(..., embed=True),
-    utility_value: str = Body(..., embed=True),  # 'aligned' o 'regret'
+    utility_value: str = Body(..., embed=True) # 'aligned' o 'regret'
 ):
-    """
-    Actualiza la columna 'utility' de un gasto después de que el usuario hace swipe.
-    """
-    if utility_value not in ["aligned", "regret"]:
-        return {"error": "Invalid utility value. Must be 'aligned' or 'regret'."}
 
+    if utility_value not in ['aligned', 'regret']:
+        return {"error": "Invalid utility value. Must be 'aligned' or 'regret'."}
+        
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
+        
         query = """
             UPDATE Gastos
             SET utility = %s
@@ -525,48 +381,13 @@ def update_transaction_utility(
         values = (utility_value, transaction_id)
         cursor.execute(query, values)
         conn.commit()
-
+        
         cursor.close()
         conn.close()
-
+        
         return {"message": "✅ Utility updated successfully."}
-
+        
     except Exception as e:
-        if "conn" in locals() and conn.is_connected():
-            conn.close()
-        return {"error": str(e)}
-
-
-# ------------------------------
-# Endpoint para resetear TODAS las utilidades a "not assigned"
-# ------------------------------
-@app.post("/gastos/reset-utilities")
-def reset_all_utilities(confirm: bool = Body(True, embed=True)):
-    """
-    Actualiza TODAS las transacciones en la base de datos
-    estableciendo utility = 'not assigned'.
-    """
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        query = """
-            UPDATE Gastos
-            SET utility = 'not assigned'
-        """
-        cursor.execute(query)
-        affected_rows = cursor.rowcount
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-        return {
-            "message": "✅ All utilities have been reset to 'not assigned'.",
-            "affected_rows": affected_rows,
-        }
-
-    except Exception as e:
-        if "conn" in locals() and conn.is_connected():
+        if 'conn' in locals() and conn.is_connected():
             conn.close()
         return {"error": str(e)}
