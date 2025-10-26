@@ -90,12 +90,12 @@ struct CoachView: View {
                 )
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Coach Financiero")
+                Text("Financial Coach")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("Tu semana en números")
+                Text("Your week in numbers")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -109,8 +109,8 @@ struct CoachView: View {
     private var spendingOverviewCard: some View {
         VStack(spacing: 20) {
             HStack(spacing: 0) {
-                metricColumn(title: "Necesarios", amount: metrics?.necesarios ?? 0, color: .primary)
-                metricColumn(title: "Innecesarios", amount: metrics?.innecesarios ?? 0, color: .red)
+                metricColumn(title: "Regret", amount: metrics?.innecesarios ?? 0, color: .red)
+                metricColumn(title: "Aligned", amount: metrics?.necesarios ?? 0, color: .primary)
             }
             
             VStack(spacing: 16) {
@@ -121,14 +121,16 @@ struct CoachView: View {
                     
                     Circle()
                         .trim(from: 0, to: necesarioPercentage)
-                        .stroke(Color.red, style: StrokeStyle(lineWidth: 20, lineCap: .round))
-                        .frame(width: 120, height: 120)
-                        .rotationEffect(.degrees(-90))
-                    Circle()
-                        .trim(from: necesarioPercentage, to: 1)
                         .stroke(Color.blue, style: StrokeStyle(lineWidth: 20, lineCap: .round))
                         .frame(width: 120, height: 120)
                         .rotationEffect(.degrees(-90))
+
+                    Circle()
+                        .trim(from: necesarioPercentage, to: 1)
+                        .stroke(Color.red, style: StrokeStyle(lineWidth: 20, lineCap: .round))
+                        .frame(width: 120, height: 120)
+                        .rotationEffect(.degrees(-90))
+ 
         
                     
                     VStack(spacing: 2) {
@@ -142,8 +144,8 @@ struct CoachView: View {
                 }
                 
                 HStack(spacing: 32) {
-                    legendItem(color: .blue, label: "Necesario", percentage: Int(necesarioPercentage * 100))
-                    legendItem(color: .red, label: "Innecesario", percentage: Int(innecesarioPercentage * 100))
+                    legendItem(color: .red, label: "Regret", percentage: Int(innecesarioPercentage * 100))
+                    legendItem(color: .blue, label: "Aligned", percentage: Int(necesarioPercentage * 100))
                 }
             }
         }
@@ -223,7 +225,7 @@ struct CoachView: View {
             HStack {
                 Image(systemName: "lightbulb")
                     .foregroundColor(.orange)
-                Text("Oportunidades de ahorro")
+                Text("Saving opportunities")
                     .font(.title3)
                     .fontWeight(.semibold)
             }
@@ -247,13 +249,13 @@ struct CoachView: View {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .foregroundColor(.white)
-                Text("Impacto total")
+                Text("Total impact")
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
             }
             
-            Text("Aplicando las 3 sugerencias principales")
+            Text("Applying the main 3 suggestions yields")
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.9))
             
@@ -263,7 +265,7 @@ struct CoachView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                 
-                Text("/ semana")
+                Text("/ week")
                     .font(.title3)
                     .foregroundColor(.white.opacity(0.8))
             }

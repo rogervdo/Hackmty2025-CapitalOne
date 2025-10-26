@@ -21,38 +21,38 @@ struct PerfilView: View {
                     VStack(spacing: 12) {
                         MenuItemView(
                             icon: "person.circle",
-                            title: "Datos personales",
+                            title: "Personal Information",
                             action: { }
                         )
                         
                         MenuItemView(
                             icon: "bell",
-                            title: "Notificaciones",
+                            title: "Notifications",
                             action: { }
                         )
                         
                         MenuItemView(
                             icon: "lock",
-                            title: "Seguridad",
+                            title: "Security",
                             action: { }
                         )
                         
                         MenuItemView(
                             icon: "gearshape",
-                            title: "Preferencias",
+                            title: "Preferences",
                             isSelected: true,
                             action: { }
                         )
                         
                         MenuItemView(
                             icon: "questionmark.circle",
-                            title: "Ayuda",
+                            title: "Help",
                             action: { }
                         )
                         
                         MenuItemView(
                             icon: "shield",
-                            title: "Legal y privacidad",
+                            title: "Legal & Privacy",
                             action: { }
                         )
                     }
@@ -61,11 +61,11 @@ struct PerfilView: View {
                     
                     // Footer con versión
                     VStack(spacing: 8) {
-                        Text("Versión 1.0.0")
+                        Text("Version 1.0.0")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Text("© 2025 Banco Digital. Todos los derechos reservados.")
+                        Text("© 2025 Digital Bank. All rights reserved.")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -75,7 +75,7 @@ struct PerfilView: View {
                     Button(action: {
                         showingLogoutAlert = true
                     }) {
-                        Text("Cerrar sesión")
+                        Text("Log Out")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.red)
                             .frame(maxWidth: .infinity)
@@ -92,16 +92,16 @@ struct PerfilView: View {
                 .padding(.horizontal, 16)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Perfil")
+            .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
         }
-        .alert("Cerrar sesión", isPresented: $showingLogoutAlert) {
-            Button("Cancelar", role: .cancel) { }
-            Button("Cerrar sesión", role: .destructive) {
+        .alert("Log Out", isPresented: $showingLogoutAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Log Out", role: .destructive) {
                 // Implementar lógica de logout
             }
         } message: {
-            Text("¿Estás seguro de que quieres cerrar sesión?")
+            Text("Are you sure you wish to log out?")
         }
     }
 }

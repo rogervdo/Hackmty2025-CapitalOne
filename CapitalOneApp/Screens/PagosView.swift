@@ -41,7 +41,7 @@ struct PagosView: View {
                 .padding(.vertical, 16)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Pagos y Transferencias")
+            .navigationTitle("Payments & Transfers")
             .navigationBarTitleDisplayMode(.large)
         }
     }
@@ -49,19 +49,19 @@ struct PagosView: View {
     private var transferTypeSelection: some View {
         HStack(spacing: 12) {
             TransferTypeButton(
-                title: "Entre mis\ncuentas",
+                title: "My accounts",
                 isSelected: selectedTransferType == .entreMisCuentas,
                 action: { selectedTransferType = .entreMisCuentas }
             )
             
             TransferTypeButton(
-                title: "A otro\nbanco",
+                title: "Another bank",
                 isSelected: selectedTransferType == .aOtroBanco,
                 action: { selectedTransferType = .aOtroBanco }
             )
             
             TransferTypeButton(
-                title: "Servicios",
+                title: "Services",
                 isSelected: selectedTransferType == .servicios,
                 action: { selectedTransferType = .servicios }
             )
@@ -72,22 +72,22 @@ struct PagosView: View {
     
     private var fromAccountSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Desde")
+            Text("From")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
             AccountCard(
-                accountType: "Cuenta Cheques",
+                accountType: "Checking account",
                 balance: "$18,420",
-                subtitle: "Saldo disponible"
+                subtitle: "Available funds"
             )
         }
     }
     
     private var toAccountSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Hacia")
+            Text("To")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -96,7 +96,7 @@ struct PagosView: View {
                 // Handle destination account selection
             }) {
                 HStack {
-                    Text("Selecciona cuenta destino")
+                    Text("Select a destination account")
                         .foregroundColor(.secondary)
                     Spacer()
                     Image(systemName: "chevron.down")
@@ -113,7 +113,7 @@ struct PagosView: View {
     
     private var amountSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Monto")
+            Text("Amount")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -144,12 +144,12 @@ struct PagosView: View {
     
     private var conceptSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Concepto (opcional)")
+            Text("Concept (optional)")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
-            TextField("Ej: Ahorro mensual", text: $concept)
+            TextField("Ex: Monthly savings", text: $concept)
                 .padding()
                 .background(Color(.systemBackground))
                 .cornerRadius(12)
@@ -162,7 +162,7 @@ struct PagosView: View {
             // Handle transfer action
             performTransfer()
         }) {
-            Text("Transferir")
+            Text("Transfer")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
