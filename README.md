@@ -160,7 +160,7 @@ GRANT ALL ON CapitalOne.* TO 'cappie_user'@'%'; FLUSH PRIVILEGES;"
 </div>
 
 | Role | Name | GitHub | Contact | 
-|---|---|---|---|---|
+|---|---|---|---|
 | Backend Lead | Angel Muñoz | [@zamer22](https://github.com/PabloZL27) | <angelaamunoza@gmail.com> | 
 | Backend Lead | Rogelio Villareal | [@rogervdo](https://github.com/user) | <rogervdo@icloud.com> | 
 | Design / UI / SwiftUI | Bryan Meza | [@Bryan-Meza](https://github.com/user) | <bryan.albertolemus9@gmail.com> | 
