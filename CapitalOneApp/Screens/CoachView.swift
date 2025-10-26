@@ -27,6 +27,7 @@ struct CoachMetrics: Decodable {
 }
 
 struct CoachView: View {
+    @State private var unalignedTransactions: [Transaction] = []
     @State private var metrics: CoachMetrics? = nil
     @State private var opportunities: [Opportunity] = []
     let userId: Int = 1  // Cambiar según usuario
@@ -349,6 +350,19 @@ struct CoachView: View {
             }
         }.resume()
     }
+    
+//    private func fetchUnalignedTransactions(){
+//        guard let url = URL(string: "https://unitycampus.onrender.com/gastos/\(userId)/utility-null") else { return }
+//        URLSession.shared.dataTask(with: url) { data, _, _ in
+//            if let data = data {
+//                if let decoded = try? JSONDecoder().decode(Transaction.self, from: data) {
+//                    DispatchQueue.main.async {
+//                        self.metrics = decoded
+//                    }
+//                }
+//            }
+//        }.resume()
+//    }
     
     private func fetchOpportunities() {
         guard let url = URL(string: "https://unitycampus.onrender.com/coach/\(userId)/opportunities") else { return }

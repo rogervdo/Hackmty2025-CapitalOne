@@ -10,14 +10,11 @@ import ConfettiSwiftUI
 
 struct SwipeView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var transactions: [Transaction] = [
-        Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza", emoji: "☕"),
-        Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport", emoji: "🚗"),
-        Transaction(chargeName: "Target", timestamp: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center", emoji: "🛍️"),
-        Transaction(chargeName: "Netflix Subscription", timestamp: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online", emoji: "🎥"),
-        Transaction(chargeName: "Gas Station", timestamp: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station", emoji: "⛽️"),
-        Transaction(chargeName: "Restaurant", timestamp: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden", emoji: "🍽️")
-    ]
+    
+    // Dev mode toggle - set to false for production
+    private let devMode = true
+    
+    @State private var transactions: [Transaction] = []
     
     @State private var currentIndex = 0
     @State private var offset = CGSize.zero
@@ -27,6 +24,18 @@ struct SwipeView: View {
     @State private var isCompleted = false
     
     @State private var trigger = 0
+    
+    // Sample data for development mode
+    private var sampleTransactions: [Transaction] {
+        return [
+            Transaction(chargeName: "Starbucks Coffee", timestamp: Date().addingTimeInterval(-3600), amount: 5.45, location: "Downtown Plaza", emoji: "☕"),
+            Transaction(chargeName: "Uber Ride", timestamp: Date().addingTimeInterval(-7200), amount: 12.30, location: "Main St to Airport", emoji: "🚗"),
+            Transaction(chargeName: "Target", timestamp: Date().addingTimeInterval(-86400), amount: 45.67, location: "Target Center", emoji: "🛍️"),
+            Transaction(chargeName: "Netflix Subscription", timestamp: Date().addingTimeInterval(-172800), amount: 15.99, location: "Online", emoji: "🎥"),
+            Transaction(chargeName: "Gas Station", timestamp: Date().addingTimeInterval(-259200), amount: 32.50, location: "Shell Station", emoji: "⛽️"),
+            Transaction(chargeName: "Restaurant", timestamp: Date().addingTimeInterval(-345600), amount: 28.75, location: "Olive Garden", emoji: "🍽️")
+        ]
+    }
     
     var body: some View {
         ZStack {
@@ -59,6 +68,9 @@ struct SwipeView: View {
             }
         }
         .confettiCannon(trigger: $trigger, num:30, confettiSize: 15, radius:400)
+        .onAppear {
+            loadTransactions()
+        }
     }
     
     // Computed property for dynamic background glow
@@ -514,6 +526,27 @@ struct SwipeView: View {
         
         print(sessionSummary)
         print("==========================================\n")
+    }
+    
+    // MARK: - Data Loading
+    
+    private func loadTransactions() {
+        if devMode {
+            // Use sample data for development
+            transactions = sampleTransactions
+            print("📱 DEV MODE: Using sample transactions (\(sampleTransactions.count) transactions)")
+        } else {
+            // Load unaligned transactions from database
+            transactions = getUnalignedTransactions()
+            print("🗄️ PRODUCTION MODE: Loaded \(transactions.count) unaligned transactions from database")
+        }
+    }
+    
+    // External function to fetch unaligned transactions - to be implemented
+    private func getUnalignedTransactions() -> [Transaction] {
+        // TODO: Implement this function to fetch transactions where aligned == nil from SQL database
+        // This should return [Transaction] structs that don't have a value in the aligned property
+        return []
     }
 }
 
