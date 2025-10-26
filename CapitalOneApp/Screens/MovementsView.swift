@@ -1,51 +1,71 @@
 import SwiftUI
+import MapKit
 
-// MARK: - Model
-struct Movement: Identifiable, Hashable, Codable {
-    let id: Int
-    let emoji: String
-    let name: String
-    let description: String
-    let date: String
-    let place: String
-    let amount: String
-    let categoryText: String
-    let classification: String
+// Este modelo es SOLO para la lista y el detalle.
+// No incluye GastoResponse para que no truenen los protocolos.
+struct MovementRowModel: Identifiable, Hashable {
+    let id = UUID()
+    var emoji: String
+    let title: String               // chargeName
+    let subtitleTop: String         // category
+    let subtitleBottom: String      // timestamp · location
+    let amount: String              // "$160"
+    let utility: String             // "aligned" / "regret" / "not assigned"
 }
 
-// MARK: - Movimientos View
 struct MovimientosView: View {
-    
-    @State private var movements: [Movement] = []
-    @State private var selectedMovement: Movement? = nil
-    
-    let userId: Int = 1  // Cambiar según el usuario actual
-    
+
+    @State private var movimientos: [MovementRowModel] = []
+    @State private var selectedMovement: MovementRowModel? = nil
+    @State private var isLoading = true
+
+    // mismo user y baseURL que usas en Dashboard
+    private let userID = 1
+    private let baseURL = "https://unitycampus.onrender.com"
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // HEADER
-                    Text("Transactions")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 16)
-                    
-                    // LIST
-                    VStack(spacing: 16) {
-                        ForEach(movements) { mov in
-                            Button {
-                                selectedMovement = mov
-                            } label: {
-                                MovementRow(movement: mov)
+            Group {
+                if isLoading {
+                    // loader CENTRADO en pantalla
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                        Text("Loading transactions…")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGray6))
+
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+
+                            // HEADER
+                            Text("Transactions")
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 8)
+                                .padding(.horizontal, 16)
+
+                            // LISTA
+                            VStack(spacing: 12) {
+                                ForEach(movimientos) { mov in
+                                    Button {
+                                        selectedMovement = mov
+                                    } label: {
+                                        MovementRow(mov: mov)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 24)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
+                    .background(Color(.systemGray6))
                 }
             }
             .navigationDestination(item: $selectedMovement) { mov in
@@ -53,182 +73,263 @@ struct MovimientosView: View {
                     .background(Color(.systemGray6))
             }
             .task {
-                await fetchMovements()
+                await loadMovements()
             }
         }
     }
-    
-    // MARK: - Fetch Movements from API
-    func fetchMovements() async {
+
+    // MARK: - Fetch all gastos del usuario
+    func loadMovements() async {
+        guard let url = URL(string: "\(baseURL)/gastos/\(userID)") else { return }
+
         do {
-            guard let url = URL(string: "https://unitycampus.onrender.com/swipe/unclassified/\(userId)") else { return }
             let (data, _) = try await URLSession.shared.data(from: url)
-            
-            struct ApiResponse: Codable {
-                let transactions: [MovementResponse]
-            }
-            
-            struct MovementResponse: Codable {
-                let id: Int
-                let chargeName: String
-                let amount: Double
-                let location: String
-                let category: String
-                let timestamp: String
-                let utility: String
-            }
-            
-            let decoded = try JSONDecoder().decode(ApiResponse.self, from: data)
-            
-            // Generar emojis
-            var categoryEmojiMap: [String: String] = [:]
-            for tx in decoded.transactions {
-                if categoryEmojiMap[tx.category] == nil {
-                    let emojiData = try await getEmoji(for: tx.category)
-                    categoryEmojiMap[tx.category] = emojiData.emoji
-                }
-            }
-            
-            let loadedMovements: [Movement] = decoded.transactions.map { tx in
-                Movement(
-                    id: tx.id,
-                    emoji: categoryEmojiMap[tx.category] ?? "🏷️",
-                    name: tx.chargeName,
-                    description: tx.category,
-                    date: tx.timestamp,
-                    place: tx.location,
-                    amount: "$\(Int(tx.amount))",
-                    categoryText: tx.category,
-                    classification: tx.utility.capitalized
+
+            // Estas structs YA existen en tu proyecto por DashboardView:
+            //  struct GastosWrapper: Decodable { let gastos: [GastoResponse] }
+            //  struct GastoResponse: Decodable {
+            //      let chargeName: String
+            //      let amount: Double
+            //      let timeStamp: String
+            //      let location: String
+            //      let category: String
+            //      let utility: String
+            //  }
+            let decoded = try JSONDecoder().decode(GastosWrapper.self, from: data)
+
+            // Mapeamos TODAS las transacciones (no solo 5)
+            var mapped: [MovementRowModel] = decoded.gastos.map { g in
+                MovementRowModel(
+                    emoji: "💳", // placeholder mientras pedimos el emoji real
+                    title: g.chargeName,
+                    subtitleTop: g.category,
+                    subtitleBottom: "\(g.timeStamp) · \(g.location)",
+                    amount: "$\(Int(g.amount))",
+                    utility: g.utility
                 )
             }
-            
-            DispatchQueue.main.async {
-                self.movements = loadedMovements
+
+            // Pedimos un emoji por categoría y lo colocamos
+            for index in mapped.indices {
+                let cat = mapped[index].subtitleTop
+                if let newEmoji = await fetchEmoji(for: cat) {
+                    mapped[index].emoji = newEmoji
+                }
             }
-            
+
+            await MainActor.run {
+                self.movimientos = mapped
+                self.isLoading = false
+            }
+
         } catch {
-            print("Error fetching movements: \(error)")
+            print("❌ Error loading movements:", error.localizedDescription)
+            await MainActor.run {
+                self.isLoading = false
+            }
         }
     }
-    
-    // MARK: - Get emoji from API
-    func getEmoji(for category: String) async throws -> (emoji: String, category: String) {
-        guard let url = URL(string: "https://unitycampus.onrender.com/emojis") else {
-            return ("🏷️", category)
+
+    // Igual que Dashboard: POST /emojis
+    func fetchEmoji(for categoryOrName: String) async -> String? {
+        guard let url = URL(string: "\(baseURL)/emojis") else { return nil }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body = ["prompt": categoryOrName]
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        req.httpBody = jsonData
+
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+
+            // intento directo
+            if let decoded = try? JSONDecoder().decode(EmojiResponse.self, from: data) {
+                return decoded.emoji
+            }
+
+            // fallback por si /emojis regresa JSON medio raro (como en Dashboard)
+            if let raw = String(data: data, encoding: .utf8),
+               let rangeEmoji = raw.range(of: "\"emoji\":") {
+                let after = raw[rangeEmoji.upperBound...]
+                if let comma = after.firstIndex(of: ",") {
+                    let piece = after[..<comma]
+                    let clean = piece
+                        .replacingOccurrences(of: "\"", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    if !clean.isEmpty {
+                        return clean
+                    }
+                }
+            }
+
+        } catch {
+            print("❌ fetchEmoji error:", error.localizedDescription)
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = ["prompt": category]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
-        struct EmojiResponse: Codable {
-            let emoji: String
-            let category: String
-        }
-        let decoded = try JSONDecoder().decode(EmojiResponse.self, from: data)
-        return (decoded.emoji, decoded.category)
+        return nil
     }
 }
 
-// MARK: - Individual Row
-struct MovementRow: View {
-    let movement: Movement
-    
+// MARK: - Row UI (mismo look que DashboardMovementRow)
+private struct MovementRow: View {
+    let mov: MovementRowModel
+
+    var chipColor: Color {
+        switch mov.utility.lowercased() {
+        case "aligned": return .blue
+        case "regret": return .red
+        default: return .gray
+        }
+    }
+
+    var chipText: String {
+        switch mov.utility.lowercased() {
+        case "aligned": return "Aligned"
+        case "regret": return "Regret"
+        default: return "Not Assigned"
+        }
+    }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: 12) {
+
             ZStack {
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
-                Text(movement.emoji)
+                Text(mov.emoji)
                     .font(.system(size: 28))
             }
-            .frame(width: 56, height: 56)
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(movement.name)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Text(movement.description)
+            .frame(width: 48, height: 48)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(mov.title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(mov.amount)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+
+                Text(mov.subtitleTop)
                     .font(.system(size: 15))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                
-                HStack(spacing: 4) {
-                    Text(movement.date)
-                    Text("·")
-                    Text(movement.place)
-                }
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 8) {
-                Text(movement.amount)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text(movement.classification)
+
+                Text(mov.subtitleBottom)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                Text(chipText)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.red)
-                    .padding(.vertical, 5)
+                    .foregroundColor(chipColor)
+                    .padding(.vertical, 6)
                     .padding(.horizontal, 10)
                     .background(
                         Capsule()
-                            .fill(Color.red.opacity(0.12))
+                            .fill(chipColor.opacity(0.12))
                     )
             }
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 16)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
+                .shadow(color: Color.black.opacity(0.07), radius: 6, x: 0, y: 3)
         )
     }
 }
 
 // MARK: - Detail View
 struct MovementDetailView: View {
-    let movement: Movement
-    
+    let movement: MovementRowModel
+
+    // Oxxo centro MTY fijo
+    private let coord = CLLocationCoordinate2D(latitude: 25.6714, longitude: -100.3090)
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                Text(movement.emoji)
-                    .font(.system(size: 64))
-                
-                Text(movement.name)
-                    .font(.title)
-                    .bold()
-                
-                Text(movement.description)
-                    .foregroundColor(.secondary)
-                
-                Text(movement.amount)
-                    .font(.title2)
-                
-                Text(movement.place)
-                Text(movement.date)
-                
-                Spacer()
+            VStack(spacing: 24) {
+
+                // 1. Info de la transacción (primero)
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemGray6))
+                            Text(movement.emoji)
+                                .font(.system(size: 32))
+                        }
+                        .frame(width: 56, height: 56)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(movement.title)
+                                .font(.system(size: 22, weight: .semibold))
+
+                            Text(movement.subtitleBottom)
+                                .font(.system(size: 15))
+                                .foregroundColor(.secondary)
+
+                            Text(movement.amount)
+                                .font(.system(size: 24, weight: .bold))
+                        }
+                        Spacer()
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text("Categoría")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(movement.subtitleTop)
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: Color.black.opacity(0.07), radius: 6, x: 0, y: 3)
+                )
+                .padding(.horizontal, 16)
+
+                // 2. Mapa fijo (Oxxo centro)
+                Map(
+                    initialPosition: .region(
+                        MKCoordinateRegion(
+                            center: coord,
+                            span: MKCoordinateSpan(
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01
+                            )
+                        )
+                    )
+                )
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .padding(.horizontal, 16)
+
+                Spacer(minLength: 32)
             }
-            .padding()
-            .navigationTitle("Detail")
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.top, 16)
+            .background(Color(.systemGray6))
         }
+        .navigationTitle("Detalle")
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color(.systemGray6))
     }
 }
 
 // MARK: - Preview
-#Preview("MovimientosView") {
+#Preview {
     MovimientosView()
 }
+

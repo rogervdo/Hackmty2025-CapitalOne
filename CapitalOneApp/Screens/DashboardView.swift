@@ -400,28 +400,6 @@ private struct CategoryPieCard: View {
                     .foregroundStyle(by: .value("Category", slice.category))
                 }
                 .frame(height: 180)
-                
-                // leyenda simple sin porcentaje
-                ForEach(slices.prefix(4)) { slice in
-                    HStack {
-                        Circle()
-                            .fill(Color.primary.opacity(0.15))
-                            .frame(width: 10, height: 10)
-                            .overlay(
-                                Circle().stroke(Color.primary.opacity(0.4), lineWidth: 0.5)
-                            )
-                        
-                        Text(slice.category)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Text(String(format: "$%.0f", slice.total))
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                }
             }
         }
         .padding(16)
