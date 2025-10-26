@@ -19,66 +19,61 @@ struct CrearMetaView: View {
     @State private var isLoading = false
     @State private var showingError = false
     @State private var errorMessage = ""
-    @State private var navigateToCoach = false
     @Environment(\.dismiss) private var dismiss
     let userId: Int = 1 // Por defecto, cambiar según el usuario
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("Crear Nueva Meta")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .padding(.top)
-                
-                Text("Describe tu meta financiera")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                TextEditor(text: $promptText)
-                    .frame(height: 150)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
-                
-                Text("Ejemplo: \"Quiero ahorrar $5000 para comprar una laptop en 3 meses\"")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal)
-                    .multilineTextAlignment(.center)
-                
-                Button(action: crearMeta) {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text("Crear Meta")
-                    }
-                }
-                .disabled(promptText.isEmpty || isLoading)
-                .frame(maxWidth: .infinity)
+        VStack(spacing: 20) {
+            Text("Crear Nueva Meta")
+                .font(.title)
+                .fontWeight(.bold)
+                .padding(.top)
+            
+            Text("Describe tu meta financiera")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            TextEditor(text: $promptText)
+                .frame(height: 150)
                 .padding()
-                .background(promptText.isEmpty ? Color.gray : Color.blue)
-                .foregroundColor(.white)
+                .background(Color(.systemGray6))
                 .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
                 .padding(.horizontal)
-                
-                NavigationLink(destination: CoachView(), isActive: $navigateToCoach) {
-                    EmptyView()
+            
+            Text("Ejemplo: \"Quiero ahorrar $5000 para comprar una laptop en 3 meses\"")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+                .multilineTextAlignment(.center)
+            
+            Button(action: crearMeta) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else {
+                    Text("Crear Meta")
                 }
-                
-                Spacer()
             }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
-            }
+            .disabled(promptText.isEmpty || isLoading)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(promptText.isEmpty ? Color.gray : Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .padding(.horizontal)
+            
+            Spacer()
+        }
+        .navigationTitle("Nueva Meta")
+        .navigationBarTitleDisplayMode(.large)
+        .alert("Error", isPresented: $showingError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -134,9 +129,11 @@ struct CrearMetaView: View {
                     // Primero intentamos parsear como diccionario
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                         // Solo verificamos que haya una respuesta JSON válida
-                        navigateToCoach = true
+                        dismiss() // Dismiss the current view instead of navigating to CoachView
                     } else {
                         print("Error al procesar la respuesta JSON")
+                        errorMessage = "Error al procesar la respuesta del servidor"
+                        showingError = true
                     }
                 } catch {
                     print("Error de decodificación: \(error)")
