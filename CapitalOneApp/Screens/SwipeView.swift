@@ -253,93 +253,321 @@ struct SwipeView: View {
     }
     
     var completionView: some View {
-        VStack(spacing: 30) {
-            // Celebration animation
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.green)
-                .scaleEffect(1.2)
-                .animation(.spring(response: 0.5, dampingFraction: 0.6).repeatCount(1, autoreverses: false), value: isCompleted)
-            
-            // Well done message
-            Text("Well Done!")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            
-            // Statistics
-            VStack(spacing: 20) {
-                Text("Session Results")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                
-                HStack(spacing: 50) {
-                    // Regret count
-                    VStack {
-                        Text("\(regretCount)")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundColor(.red)
-                        Text("Regrets")
-                            .font(.headline)
-                            .foregroundColor(.red)
+        ScrollView {
+            VStack(spacing: 30) {
+                // Animated celebration header with multiple elements
+                VStack(spacing: 20) {
+                    // Main celebration icon with animated glow
+                    ZStack {
+                        // Glowing background circles
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.green.opacity(0.3),
+                                        Color.mint.opacity(0.2),
+                                        Color.clear
+                                    ]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 80
+                                )
+                            )
+                            .frame(width: 160, height: 160)
+                            .scaleEffect(1.5)
+                            .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: isCompleted)
+                        
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.yellow.opacity(0.2),
+                                        Color.orange.opacity(0.1),
+                                        Color.clear
+                                    ]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 60
+                                )
+                            )
+                            .frame(width: 120, height: 120)
+                            .scaleEffect(1.8)
+                            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3), value: isCompleted)
+                        
+                        // Main checkmark icon
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 80))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.green, Color.mint]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .scaleEffect(1.2)
+                            .rotationEffect(.degrees(360))
+                            .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2), value: isCompleted)
                     }
                     
-                    // Aligned count
-                    VStack {
-                        Text("\(alignedCount)")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundColor(.green)
-                        Text("Aligned")
-                            .font(.headline)
-                            .foregroundColor(.green)
+                    // Decorative stars around the main icon
+                    HStack(spacing: 60) {
+                        Image(systemName: "star.fill")
+                            .font(.title)
+                            .foregroundColor(.yellow)
+                            .rotationEffect(.degrees(-15))
+                            .scaleEffect(0.8)
+                            .animation(.spring(response: 0.6).delay(0.4), value: isCompleted)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "star.fill")
+                            .font(.title2)
+                            .foregroundColor(.orange)
+                            .rotationEffect(.degrees(15))
+                            .scaleEffect(0.6)
+                            .animation(.spring(response: 0.6).delay(0.6), value: isCompleted)
                     }
+                    .padding(.horizontal, 80)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                )
-            }
-            
-            // Action buttons
-            VStack(spacing: 16) {
-                // Reset button
-                Button(action: {
-                    resetSession()
-                }) {
-                    Text("Start New Session")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                
+                // Enhanced well done message with gradient text
+                VStack(spacing: 10) {
+                    Text("🎉 Well Done! 🎉")
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.purple,
+                                    Color.blue,
+                                    Color.green
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .scaleEffect(1.1)
+                        .animation(.spring(response: 0.7).delay(0.8), value: isCompleted)
+                    
+                    Text("You've reviewed all transactions!")
+                        .font(.system(.title3, design: .rounded, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .animation(.easeIn(duration: 0.5).delay(1.0), value: isCompleted)
+                }
+                
+                // Enhanced statistics with better visual design
+                VStack(spacing: 25) {
+                    Text("Session Results")
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .foregroundColor(.secondary)
+                    
+                    // Statistics cards with improved styling
+                    HStack(spacing: 20) {
+                        // Regret count card
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(.red.opacity(0.1))
+                                    .frame(width: 60, height: 60)
+                                    .overlay {
+                                        Circle()
+                                            .stroke(.red.opacity(0.3), lineWidth: 2)
+                                    }
+                                
+                                Text("\(regretCount)")
+                                    .font(.system(.title, design: .rounded, weight: .bold))
+                                    .foregroundColor(.red)
+                            }
+                            
+                            VStack(spacing: 4) {
+                                Text("Regrets")
+                                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                                    .foregroundColor(.red)
+                                
+                                Text("🔴 Transactions")
+                                    .font(.system(.caption, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 20)
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(.red.opacity(0.2), lineWidth: 1)
+                                }
+                        }
+                        .scaleEffect(0.95)
+                        .animation(.spring(response: 0.6).delay(1.2), value: isCompleted)
+                        
+                        // Aligned count card
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(.green.opacity(0.1))
+                                    .frame(width: 60, height: 60)
+                                    .overlay {
+                                        Circle()
+                                            .stroke(.green.opacity(0.3), lineWidth: 2)
+                                    }
+                                
+                                Text("\(alignedCount)")
+                                    .font(.system(.title, design: .rounded, weight: .bold))
+                                    .foregroundColor(.green)
+                            }
+                            
+                            VStack(spacing: 4) {
+                                Text("Aligned")
+                                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                                    .foregroundColor(.green)
+                                
+                                Text("🟢 Transactions")
+                                    .font(.system(.caption, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 20)
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .stroke(.green.opacity(0.2), lineWidth: 1)
+                                }
+                        }
+                        .scaleEffect(0.95)
+                        .animation(.spring(response: 0.6).delay(1.4), value: isCompleted)
+                    }
+                    .padding(.horizontal, 20)
+
+                }
+                .padding(.horizontal, 10)
+                
+                // Motivational message
+                VStack(spacing: 10) {
+                    Text("🎯")
+                        .font(.system(size: 40))
+                        .scaleEffect(1.2)
+                        .animation(.spring(response: 0.5).delay(1.8), value: isCompleted)
+                    
+                    Text("Great job staying mindful of your spending!")
+                        .font(.system(.body, design: .rounded, weight: .medium))
+                        .foregroundStyle(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .animation(.easeIn(duration: 0.5).delay(2.0), value: isCompleted)
+                }
+                .padding(.vertical, 15)
+                .background {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(.quaternary, lineWidth: 0.5)
+                        }
+                }
+                .padding(.horizontal, 20)
+                
+                // Enhanced action buttons
+                VStack(spacing: 16) {
+                    // Reset button with gradient
+                    Button(action: {
+                        resetSession()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.headline)
+                            Text("Start New Session")
+                                .font(.system(.headline, design: .rounded, weight: .semibold))
+                        }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 40)
-                
-                // Back to Coach button
-                Button(action: {
-                    dismiss()
-                }) {
-                    Text("Back to Coach")
-                        .font(.headline)
-                        .fontWeight(.medium)
+                        .padding(.vertical, 16)
+                        .background {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                        }
+                        .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
+                    }
+                    .padding(.horizontal, 30)
+                    .scaleEffect(0.98)
+                    .animation(.spring(response: 0.6).delay(2.2), value: isCompleted)
+                    
+                    // Back to Coach button with glass effect
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                                .font(.headline)
+                            Text("Back to Coach")
+                                .font(.system(.headline, design: .rounded, weight: .medium))
+                        }
                         .foregroundColor(.blue)
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.blue, lineWidth: 2)
-                                .fill(Color.clear)
+                        .padding(.vertical, 16)
+                        .background {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(.blue.opacity(0.5), lineWidth: 1.5)
+                                }
+                        }
+                    }
+                    .padding(.horizontal, 30)
+                    .scaleEffect(0.98)
+                    .animation(.spring(response: 0.6).delay(2.4), value: isCompleted)
+                }
+            }
+            .padding()
+        }
+        .background {
+            // Subtle animated background with floating elements
+            ZStack {
+                ForEach(0..<6, id: \.self) { index in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    [Color.blue, Color.purple, Color.green, Color.orange, Color.pink, Color.yellow][index].opacity(0.1),
+                                    Color.clear
+                                ]),
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 50
+                            )
+                        )
+                        .frame(width: 100, height: 100)
+                        .offset(
+                            x: CGFloat.random(in: -200...200),
+                            y: CGFloat.random(in: -400...400)
+                        )
+                        .scaleEffect(CGFloat.random(in: 0.5...1.5))
+                        .animation(
+                            .easeInOut(duration: Double.random(in: 3...5))
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.5),
+                            value: isCompleted
                         )
                 }
-                .padding(.horizontal, 40)
             }
         }
-        .padding()
     }
     
     private func handleSwipeGesture(translation: CGSize) {
