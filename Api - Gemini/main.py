@@ -244,10 +244,10 @@ def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., emb
         {{
           "nombre_meta": "...",
           "descripcion": "...",
-          "monto_objetivo": <float>,
+          "goal_amount": int,
           "tipo": "ahorro" o "reducción de gasto",
-          "fecha_inicio": "YYYY-MM-DD",
-          "fecha_fin": "YYYY-MM-DD"
+          "start_date": "YYYY-MM-DD",
+          "end_date": "YYYY-MM-DD"
         }}
         """
         response = model.generate_content(base_prompt)
@@ -258,17 +258,17 @@ def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., emb
 
         # Guardamos la meta en la base de datos
         query = """
-        INSERT INTO Metas (user, nombre_meta, descripcion, monto_objetivo, tipo, fecha_inicio, fecha_fin)
+        INSERT INTO Metas (user, nombre_meta, descripcion, goal_amount, tipo, start_date, end_date)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         values = (
             user_id,
             meta_data["nombre_meta"],
             meta_data["descripcion"],
-            meta_data["monto_objetivo"],
+            meta_data["goal_amount"],
             meta_data["tipo"],
-            meta_data["fecha_inicio"],
-            meta_data["fecha_fin"]
+            meta_data["start_date"],
+            meta_data["end_date"]
         )
         cursor.execute(query, values)
         conn.commit()
