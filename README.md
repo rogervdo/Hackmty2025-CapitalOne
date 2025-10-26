@@ -1,45 +1,40 @@
 # 💳 Cappie  
-### “Pequechos cambios, grandes logros.”
+### “Pequeños cambios, grandes logros.”
 
 ---
+### Problem Addressed
+Managing money is time-consuming and mentally taxing. Most banking apps are **reactive** (balances + lists) and don’t guide the user with **clear, actionable steps**. Budgets are often rigid or vague, and they don’t show the **impact** of small daily choices on weekly goals.
 
-## 🧠 Descripción general  
-**Cappie** es una aplicación bancaria con un **Coach Financiero impulsado por IA**, inspirada en el estilo y filosofía de **Capital One**.  
-Su objetivo es ayudar a los usuarios a **mejorar sus hábitos financieros** mediante pequeños cambios diarios que se traducen en **grandes logros** a lo largo del tiempo.  
+### Our Solution: **Cappie**
+A **Financial Coach** inside a banking app that turns transactions into **simple, explainable actions**.
 
-En su versión **MVP**, Cappie se centra en el **modo Normal**, donde el usuario recibe recomendaciones inteligentes y personalizadas sin presión, basadas en su comportamiento financiero y metas semanales.  
+**How the MVP (Normal mode) works:**
+- **“Tinder for spending” onboarding:** quick swipes (👍 / 👎) to learn habits.
+- **Emoji + map-based history:** fast, emotional visualization by category/location.
+- **Weekly goals + Savings Envelope:** small, achievable targets and a ledger to “compensate now”.
+- **Explainable recommendations (the “why”):** generated with **Gemini**, while metrics/rules run **on-device** for privacy.
+- **Coach Metrics & Opportunities:** real-time metrics (needs, regrets, progress) and saving opportunities from “regret” expenses.
+- **AI-assisted classification:** emoji/category suggestions and goal creation from a free-text prompt.
 
----
+**Expected outcome (MVP):**
+- Less friction to understand spending.
+- **Small changes** that **accelerate goals** (“Pequeños cambios, grandes logros.”).
+- A **friendly, non-punitive** experience aligned with Capital One’s spirit.
 
-## 💡 Características principales  
-- 💬 **Coach Financiero AI (Modo Normal):**  
-  Sugiere acciones personalizadas según tus gastos, ingresos y metas.  
-- 💸 **Onboarding tipo “Tinder de gastos”:**  
-  Clasifica hábitos con gestos simples (me gusta / no me gusta).  
-- 📊 **Historial con emojis y mapa interactivo:**  
-  Visualiza transacciones de forma divertida y emocional.  
-- 🎯 **Metas semanales y sobre de ahorro:**  
-  Fija metas realistas y compensa desviaciones con el “Sobre de Ahorro”.  
-- 🤖 **Gemini + on-device calculations:**  
-  El coach usa **Gemini** (para lenguaje y explicaciones) y el cálculo de métricas se hace **en el dispositivo**, protegiendo la privacidad del usuario.  
-- 🏦 **Ecosistema bancario completo:**  
-  Pantallas de **login, cuentas, movimientos, pagos y perfil** integradas.
+### Technologies Used
+| Layer | Technologies | Purpose |
+|---|---|---|
+| **Frontend (iOS)** | **SwiftUI**, Combine, Swift Charts | Native UI: coach views, emoji history, goals & envelope. |
+| **Backend (API)** | **FastAPI**, Uvicorn, Pydantic | REST endpoints: expenses, coach metrics, opportunities, swipe, goals, emojis. |
+| **Database** | **MySQL 8** | Tables: `Usuario`, `Gastos`, `Metas`. Seed/Dump: `HackMTYCapitalOne2025.sql`. |
+| **AI (NLG)** | **Google Gemini API** | Suggestions, emoji categorization, goal creation from prompt. |
+| **Connector** | `mysql-connector-python` | MySQL access from FastAPI. |
+| **Infra/Dev** | (Optional) Docker Compose | Local orchestration: API + DB. |
+| **Design** | Figma (Capital One vibe) | Palette: Blue `#004481`, Red `#D10000`, Background `#F5F7FA`. |
 
----
+**Key Endpoints (summary):**
+`POST /gastos/nuevo`, `GET /gastos/{user_id}`, `GET /coach/{user_id}`,  
+`GET /coach/{user_id}/opportunities`, `GET /swipe/unclassified/{user_id}`, `POST /swipe/update`,  
+`POST /metas`, `POST /emojis`
 
-## 🧩 Arquitectura del proyecto  
-| Capa | Descripción | Stack |
-|------|--------------|-------|
-| **Frontend (App iOS)** | Interfaz principal con vistas SwiftUI y componentes nativos. | `SwiftUI`, `Combine`, `Swift Charts` |
-| **Backend (Simulado)** | API mock de banca y transacciones. | `Node.js / Express` o `FastAPI` (según demo) |
-| **Coach AI** | Motor NLG para sugerencias y explicaciones. | `Google Gemini API` |
-| **On-device Engine** | Cálculo de métricas, límites y simulaciones. | `Swift` (local compute) |
-| **Diseño UI/UX** | Inspirado en Capital One: azul #004481, rojo #D10000, blanco #F5F7FA. | `Figma`, `SF Symbols` |
-
----
-
-## 🚀 Instalación y ejecución  
-1. Clona el repositorio:  
-   ```bash
-   git clone https://github.com/<tu-usuario>/Cappie.git
-   cd Cappie
+> Interactive docs: `http://localhost:8000/docs`
