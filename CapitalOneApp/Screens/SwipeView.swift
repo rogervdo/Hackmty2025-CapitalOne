@@ -10,19 +10,18 @@ import ConfettiSwiftUI
 
 struct SwipeView: View {
     @Environment(\.dismiss) private var dismiss
-    
-    // Dev mode toggle - set to false for production
-    private let devMode = true
-    
     @State private var transactions: [Transaction] = []
-    
+    @State private var isLoading = true
+    @State private var loadError: String?
+    let userId: Int = 1  // Change based on your user
+
     @State private var currentIndex = 0
     @State private var offset = CGSize.zero
     @State private var rotation: Double = 0
     @State private var alignedCount = 0
     @State private var regretCount = 0
     @State private var isCompleted = false
-    
+
     @State private var trigger = 0
     
     // Sample data for development mode
@@ -44,24 +43,65 @@ struct SwipeView: View {
                 .fill(backgroundGlow)
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.2), value: offset.width)
-            
-            if isCompleted {
+
+            if isLoading {
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading transactions...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+            } else if let error = loadError {
+                VStack(spacing: 20) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 50))
+                        .foregroundColor(.orange)
+                    Text("Error loading transactions")
+                        .font(.headline)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    Button("Retry") {
+                        fetchUnclassifiedTransactions()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+            } else if isCompleted {
                 completionView
+            } else if transactions.isEmpty {
+                VStack(spacing: 20) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.green)
+                    Text("No transactions to review")
+                        .font(.headline)
+                    Text("All caught up!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Button("Back to Coach") {
+                        dismiss()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 VStack {
                     // Header
                     headerView
-                    
+
                     Spacer()
-                    
+
                     // Card Stack
                     cardStackView
-                    
+
                     Spacer()
-                    
+
                     // Action Buttons
                     actionButtonsView
-                    
+
                     Spacer()
                 }
                 .padding()
@@ -69,7 +109,7 @@ struct SwipeView: View {
         }
         .confettiCannon(trigger: $trigger, num:30, confettiSize: 15, radius:400)
         .onAppear {
-            loadTransactions()
+            fetchUnclassifiedTransactions()
         }
     }
     
@@ -498,55 +538,86 @@ struct SwipeView: View {
         print("========================")
         print("\n📋 ALL TRANSACTIONS WITH ALIGNED VALUES:")
         print("==========================================")
-        
+
         for (index, transaction) in transactions.enumerated() {
             let alignedStatus = transaction.aligned ?? "unprocessed"
             let emoji = transaction.aligned == "align" ? "🟢" : transaction.aligned == "regret" ? "🔴" : "⚪"
-            
+
             print("\(index + 1). \(emoji) \(transaction.chargeName)")
             print("   Amount: $\(String(format: "%.2f", transaction.amount))")
             print("   Location: \(transaction.location ?? "Unknown")")
             print("   Aligned Value: \(alignedStatus)")
             print("   Date: \(transaction.timestamp)")
             print("   ID: \(transaction.id)")
+            print("   API ID: \(transaction.apiId ?? 0)")
             print("   ---")
         }
-        
+
         print("==========================================")
         print("🔥 SESSION SUMMARY ARRAY:")
         let sessionSummary = transactions.map { transaction in
             return [
+                "apiId": transaction.apiId ?? 0,
                 "chargeName": transaction.chargeName,
                 "amount": transaction.amount,
                 "aligned": transaction.aligned ?? "unprocessed",
                 "location": transaction.location ?? "Unknown",
                 "id": transaction.id.uuidString
-            ]
+            ] as [String : Any]
         }
-        
+
         print(sessionSummary)
         print("==========================================\n")
     }
-    
-    // MARK: - Data Loading
-    
-    private func loadTransactions() {
-        if devMode {
-            // Use sample data for development
-            transactions = sampleTransactions
-            print("📱 DEV MODE: Using sample transactions (\(sampleTransactions.count) transactions)")
-        } else {
-            // Load unaligned transactions from database
-            transactions = getUnalignedTransactions()
-            print("🗄️ PRODUCTION MODE: Loaded \(transactions.count) unaligned transactions from database")
+
+    // MARK: - API Networking
+    private func fetchUnclassifiedTransactions() {
+        isLoading = true
+        loadError = nil
+
+        guard let url = URL(string: "https://unitycampus.onrender.com/swipe/unclassified/\(userId)") else {
+            loadError = "Invalid URL"
+            isLoading = false
+            return
         }
-    }
-    
-    // External function to fetch unaligned transactions - to be implemented
-    private func getUnalignedTransactions() -> [Transaction] {
-        // TODO: Implement this function to fetch transactions where aligned == nil from SQL database
-        // This should return [Transaction] structs that don't have a value in the aligned property
-        return []
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.loadError = "Network error: \(error.localizedDescription)"
+                    self.isLoading = false
+                    return
+                }
+
+                guard let data = data else {
+                    self.loadError = "No data received"
+                    self.isLoading = false
+                    return
+                }
+
+                // Debug: Print raw JSON response
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📡 API Response:")
+                    print(jsonString)
+                }
+
+                do {
+                    let decoder = JSONDecoder()
+                    let response = try decoder.decode(TransactionsResponse.self, from: data)
+
+                    // Convert API transactions to app transactions
+                    self.transactions = response.transactions.map { Transaction(from: $0) }
+
+                    print("✅ Successfully loaded \(self.transactions.count) transactions")
+
+                    self.isLoading = false
+                } catch {
+                    self.loadError = "Failed to decode: \(error.localizedDescription)"
+                    self.isLoading = false
+                    print("❌ Decoding error: \(error)")
+                }
+            }
+        }.resume()
     }
 }
 
