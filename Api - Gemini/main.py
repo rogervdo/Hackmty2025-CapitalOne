@@ -160,14 +160,14 @@ def coach_metrics(user_id: int):
         innecesarios = sum(g['amount'] for g in gastos if g['utility'] == 'regret')
         unsortedTransactions = sum(1 for g in gastos if g['utility'] == 'not assigned')
 
-        # Tomar meta semanal más reciente
+
         cursor.execute("SELECT goal_amount, start_date, end_date FROM Metas WHERE user=%s ORDER BY start_date DESC LIMIT 1", (user_id,))
         meta = cursor.fetchone()
         capSemanal = meta['goal_amount'] if meta else 1000
         metaSemanal = meta['goal_amount'] if meta else 1800
 
         progress = min(necesarios / metaSemanal, 1) if meta else 0.37
-        impactoTotal = innecesarios * 0.5  # ejemplo: 50% del gasto innecesario se podría ahorrar
+        impactoTotal = innecesarios * 0.5  
 
         cursor.close()
         conn.close()
@@ -211,5 +211,58 @@ def coach_opportunities(user_id: int):
             })
 
         return {"opportunities": opportunities[:3]}  # limitar a 3 oportunidades
+    except Exception as e:
+        return {"error": str(e)}
+@app.post("/metas")
+def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., embed=True)):
+    """
+    Crea una meta a partir de un prompt libre y la guarda en la base de datos.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Pedimos a Gemini que genere la meta en JSON estructurado
+        base_prompt = f"""
+        Eres un asesor financiero. A partir del siguiente prompt del usuario:
+        "{prompt}"
+
+        Genera un JSON con esta estructura:
+        {{
+          "nombre_meta": "...",
+          "descripcion": "...",
+          "monto_objetivo": <float>,
+          "tipo": "ahorro" o "reducción de gasto",
+          "fecha_inicio": "YYYY-MM-DD",
+          "fecha_fin": "YYYY-MM-DD"
+        }}
+        """
+        response = model.generate_content(base_prompt)
+        meta_json = response.text.strip().replace("```json", "").replace("```", "")
+
+        import json
+        meta_data = json.loads(meta_json)
+
+        # Guardamos la meta en la base de datos
+        query = """
+        INSERT INTO Metas (user, nombre_meta, descripcion, monto_objetivo, tipo, fecha_inicio, fecha_fin)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        values = (
+            user_id,
+            meta_data["nombre_meta"],
+            meta_data["descripcion"],
+            meta_data["monto_objetivo"],
+            meta_data["tipo"],
+            meta_data["fecha_inicio"],
+            meta_data["fecha_fin"]
+        )
+        cursor.execute(query, values)
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {"message": "✅ Meta creada exitosamente", "meta": meta_data}
     except Exception as e:
         return {"error": str(e)}
