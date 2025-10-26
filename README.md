@@ -145,20 +145,27 @@ GRANT ALL ON CapitalOne.* TO 'cappie_user'@'%'; FLUSH PRIVILEGES;"
 
 <div align="left">
 
+<a href="https://github.com/zamer22">
+  <img src="https://github.com/zamer22.png?size=100" width="64" height="64" style="border-radius:12px" alt="Angel Muñoz" />
+</a>
+<a href="https://github.com/rogervdo">
+  <img src="https://github.com/rogervdo.png?size=100" width="64" height="64" style="border-radius:12px" alt="Rogelio Villareal" />
+</a>
+<a href="https://github.com/Bryan-Meza">
+  <img src="https://github.com/Bryan-Meza.png?size=100" width="64" height="64" style="border-radius:12px" alt="Bryan Meza" />
+</a>
 <a href="https://github.com/PabloZL27">
   <img src="https://github.com/PabloZL27.png?size=100" width="64" height="64" style="border-radius:12px" alt="Pablo Zapata" />
 </a>
-<!-- Duplica el bloque <a> por cada integrante y cambia el enlace/alt -->
 
 </div>
 
 | Role | Name | GitHub | Contact | Responsibilities |
 |---|---|---|---|---|
-| Backend Lead | Pablo Zapata | [@PabloZL27](https://github.com/PabloZL27) | <email@example.com> | FastAPI API, MySQL, endpoints, security |
-| iOS / SwiftUI | _Add member_ | [@user](https://github.com/user) | <email@example.com> | SwiftUI views, Coach flow, envelope |
-| AI / NLG | _Add member_ | [@user](https://github.com/user) | <email@example.com> | Gemini prompts, “why” explanations, emojis |
-| Design / UI | _Add member_ | [@user](https://github.com/user) | <email@example.com> | Figma, Capital One palette, components |
-| QA / Demo | _Add member_ | [@user](https://github.com/user) | <email@example.com> | Test cases, seed data, demo script |
+| Backend Lead | Angel Muñoz | [@zamer22](https://github.com/PabloZL27) | <email@example.com> | FastAPI API, MySQL, endpoints, Gemini prompts |
+| Backend Lead | Rogelio Villareal | [@rogervdo](https://github.com/user) | <email@example.com> | Endpoints, Gemini prompts, SwiftUI views, Coach flow, envelope |
+| Design / UI / SwiftUI | Bryan Meza | [@Bryan-Meza](https://github.com/user) | <email@example.com> | Figma, Capital One palette, components, SwiftUI views |
+| Design / UI / SwiftUI | Pablo Zapata | [@PabloZL27](https://github.com/user) | <email@example.com> | Figma, Capital One palette, components, SwiftUI views |
 
 ---
 
