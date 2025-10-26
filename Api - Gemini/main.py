@@ -169,7 +169,7 @@ def obtener_gastos_usuario_utility_null(user_id: int):
             FROM 
                 Gastos G
             WHERE 
-                G.user = %s AND G.utility IS NULL
+                G.user = %s AND G.utility IS "not assigned"
             ORDER BY 
                 G.timeStamp DESC
         """
