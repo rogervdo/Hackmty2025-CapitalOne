@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Body
+from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import mysql.connector
 from datetime import datetime
@@ -22,6 +23,15 @@ def get_db_connection():
 
 
 app = FastAPI(title="CapitalOne + Gemini API", version="3.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (for development)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 
 # ------------------------------
@@ -430,6 +440,41 @@ def update_transaction_utility(
         conn.close()
 
         return {"message": "✅ Utility updated successfully."}
+
+    except Exception as e:
+        if "conn" in locals() and conn.is_connected():
+            conn.close()
+        return {"error": str(e)}
+
+
+# ------------------------------
+# Endpoint para resetear TODAS las utilidades a "not assigned"
+# ------------------------------
+@app.post("/gastos/reset-utilities")
+def reset_all_utilities(confirm: bool = Body(True, embed=True)):
+    """
+    Actualiza TODAS las transacciones en la base de datos
+    estableciendo utility = 'not assigned'.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        query = """
+            UPDATE Gastos
+            SET utility = 'not assigned'
+        """
+        cursor.execute(query)
+        affected_rows = cursor.rowcount
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "message": "✅ All utilities have been reset to 'not assigned'.",
+            "affected_rows": affected_rows,
+        }
 
     except Exception as e:
         if "conn" in locals() and conn.is_connected():

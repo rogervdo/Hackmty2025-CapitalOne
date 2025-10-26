@@ -18,8 +18,6 @@ struct PagosView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Header
-                    headerSection
                     
                     // Transfer Type Selection
                     transferTypeSelection
@@ -47,14 +45,7 @@ struct PagosView: View {
             .navigationBarTitleDisplayMode(.large)
         }
     }
-    
-    private var headerSection: some View {
-        Text("Pagos y Transferencias")
-            .font(.largeTitle)
-            .fontWeight(.bold)
-            .foregroundColor(.primary)
-    }
-    
+
     private var transferTypeSelection: some View {
         HStack(spacing: 12) {
             TransferTypeButton(
