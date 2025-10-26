@@ -3,11 +3,11 @@ import google.generativeai as genai
 import mysql.connector
 from datetime import datetime
 
-
+# Configuración de Gemini AI
 genai.configure(api_key="AIzaSyA_TqVeJN3HvnngU-jMoXp8gXemps6YiS0")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-
+# Configuración de la base de datos
 db_config = {
     "host": "capital-one-mysql-2a76c2d1-tec-a639.f.aivencloud.com",
     "user": "avnadmin",
@@ -21,50 +21,9 @@ def get_db_connection():
 
 app = FastAPI(title="CapitalOne + Gemini API", version="3.0")
 
-from datetime import timedelta 
-
-@app.post("/coach/{user_id}/summary")
-def get_coach_summary(
-    user_id: int, 
-    necesarios: float = Body(..., embed=True),
-    innecesarios: float = Body(..., embed=True),
-    impactoTotal: float = Body(..., embed=True),
-    goalName: str = Body(..., embed=True),
-    progress: float = Body(..., embed=True)
-):
-
-    try:
-       
-        impacto_porcentaje = int((impactoTotal / innecesarios) * 100) if innecesarios > 0 else 0
-        
-        prompt_data = f"""
-        Como coach financiero, genera un mensaje corto (máximo 3 oraciones) para un usuario con las siguientes métricas semanales:
-        - Gasto Necesario: ${necesarios:.2f}
-        - Gasto Innecesario: ${innecesarios:.2f}
-        - Meta actual: {goalName}
-        - Progreso semanal de la meta: {int(progress * 100)}%
-        - Impacto potencial total (ahorro si aplica sugerencias): ${impactoTotal:.2f}
-        - Este impacto representa un {impacto_porcentaje}% de sus gastos innecesarios.
-
-        Instrucciones:
-        1. Compara su gasto innecesario con el impacto potencial.
-        2. Menciona la meta.
-        3. Termina con una frase de acción o motivación. and do it in english
-        """
-        
-  
-        response = model.generate_content(prompt_data)
-        summary = response.text.strip()
-
-        return {"summary": summary}
-
-    except Exception as e:
-        
-        return {"error": str(e)}
-
-
-
-
+# ------------------------------
+# Endpoint de emojis
+# ------------------------------
 @app.post("/emojis")
 def ask_gemini(prompt: str = Body(..., embed=True)):
     """
@@ -89,7 +48,9 @@ def ask_gemini(prompt: str = Body(..., embed=True)):
     except Exception as e:
         return {"error": str(e)}
 
-
+# ------------------------------
+# Endpoint para nuevo gasto
+# ------------------------------
 @app.post("/gastos/nuevo")
 def nuevo_gasto(
     chargeName: str = Body(...),
@@ -116,7 +77,9 @@ def nuevo_gasto(
     except Exception as e:
         return {"error": str(e)}
 
-
+# ------------------------------
+# Endpoint para obtener todos los gastos
+# ------------------------------
 @app.get("/gastos")
 def obtener_gastos():
     try:
@@ -146,7 +109,9 @@ def obtener_gastos():
     except Exception as e:
         return {"error": str(e)}
 
-
+# ------------------------------
+# Endpoint para obtener gastos de un usuario
+# ------------------------------
 @app.get("/gastos/{user_id}")
 def obtener_gastos_usuario(user_id: int):
     try:
@@ -175,15 +140,19 @@ def obtener_gastos_usuario(user_id: int):
     except Exception as e:
         return {"error": str(e)}
 
-
+# ------------------------------
+# Endpoint Coach Metrics
+# ------------------------------
 @app.get("/coach/{user_id}")
 def coach_metrics(user_id: int):
-
+    """
+    Devuelve métricas y el nombre de la última meta para la vista Coach.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-
+        # 1. Obtener gastos del usuario y calcular métricas
         cursor.execute("SELECT amount, utility FROM Gastos WHERE user=%s", (user_id,))
         gastos = cursor.fetchall()
         
@@ -191,16 +160,17 @@ def coach_metrics(user_id: int):
         innecesarios = sum(g['amount'] for g in gastos if g['utility'] == 'regret')
         unsortedTransactions = sum(1 for g in gastos if g['utility'] == 'not assigned')
 
-
+        # 2. Obtener solo el nombre y monto de la última meta (AQUÍ ESTÁ EL CAMBIO)
         cursor.execute(
             "SELECT nombre_meta, goal_amount FROM Metas WHERE user=%s ORDER BY start_date DESC LIMIT 1", 
             (user_id,)
         )
         meta = cursor.fetchone()
         
-
+        # 3. Asignar valores
+        # Usamos el monto de la meta (goal_amount) o un valor por defecto
         metaSemanal = meta['goal_amount'] if meta and meta['goal_amount'] else 1800
-        capSemanal = necesarios
+        capSemanal = necesarios # Mantener la lógica existente
 
         progress = min(necesarios / metaSemanal, 1) if metaSemanal > 0 else 0.37
         impactoTotal = innecesarios * 0.5 
@@ -218,6 +188,7 @@ def coach_metrics(user_id: int):
             "progress": round(progress, 2),
             "unsortedTransactions": unsortedTransactions,
             "impactoTotal": impactoTotal,
+            # CAMPO DE LA META
             "goalName": meta['nombre_meta'] if meta else "No goal set",
         }
     except Exception as e:
@@ -229,7 +200,9 @@ def coach_metrics(user_id: int):
 
 @app.get("/coach/{user_id}/opportunities")
 def coach_opportunities(user_id: int):
-
+    """
+    Devuelve oportunidades de ahorro para la vista Coach.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -242,10 +215,10 @@ def coach_opportunities(user_id: int):
         opportunities = []
         for g in gastos_regret:
             opportunities.append({
-                "title": f"Unnecessary expense: {g['chargeName']}",
-                "description": f"This ${g['amount']} expense in {g['category']} could have been avoided.",
-                "primaryAction": "Review expense",
-                "secondaryAction": "Set limit"
+                "title": f"Gasto innecesario: {g['chargeName']}",
+                "description": f"Este gasto de ${g['amount']} en {g['category']} podría haberse evitado.",
+                "primaryAction": "Revisar gasto",
+                "secondaryAction": "Establecer límite"
             })
 
         return {"opportunities": opportunities[:3]}  
@@ -253,14 +226,16 @@ def coach_opportunities(user_id: int):
         return {"error": str(e)}
 @app.post("/metas")
 def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., embed=True)):
-
+    """
+    Crea una meta a partir de un prompt libre y la guarda en la base de datos.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
         
         base_prompt = f"""
-        Eres un asesor financiero. Recuerda darme todo en ingles, A partir del siguiente prompt del usuario:
+        Eres un asesor financiero. A partir del siguiente prompt del usuario:
         "{prompt}"
 
         Genera un JSON con esta estructura:
@@ -306,7 +281,10 @@ def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., emb
 
 @app.get("/swipe/unclassified/{user_id}")
 def get_unclassified_transactions(user_id: int):
-
+    """
+    Devuelve un máximo de 10 gastos no clasificados (utility='not assigned')
+    para el usuario especificado.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -362,7 +340,9 @@ def update_transaction_utility(
     transaction_id: int = Body(..., embed=True),
     utility_value: str = Body(..., embed=True) # 'aligned' o 'regret'
 ):
-
+    """
+    Actualiza la columna 'utility' de un gasto después de que el usuario hace swipe.
+    """
     if utility_value not in ['aligned', 'regret']:
         return {"error": "Invalid utility value. Must be 'aligned' or 'regret'."}
         
