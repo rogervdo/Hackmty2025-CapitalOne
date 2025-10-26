@@ -220,7 +220,6 @@ def coach_metrics(user_id: int):
             "progress": round(progress, 2),
             "unsortedTransactions": unsortedTransactions,
             "impactoTotal": impactoTotal,
-            # CAMPO DE LA META
             "goalName": meta['nombre_meta'] if meta else "No goal set",
         }
     except Exception as e:
@@ -263,7 +262,7 @@ def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., emb
 
         
         base_prompt = f"""
-        Eres un asesor financiero. A partir del siguiente prompt del usuario:
+        Eres un asesor financiero. Recuerda darme todo en ingles, A partir del siguiente prompt del usuario:
         "{prompt}"
 
         Genera un JSON con esta estructura:
