@@ -30,10 +30,10 @@ struct MainTabView: View {
                 .tag(2)
                 .navigationBarBackButtonHidden(true)
             
-            PagosView()
+            MetaView()
                 .tabItem {
                     Image(systemName: "creditcard.fill")
-                    Text("Transfer")
+                    Text("Goals")
                 }
                 .tag(3)
                 .navigationBarBackButtonHidden(true)

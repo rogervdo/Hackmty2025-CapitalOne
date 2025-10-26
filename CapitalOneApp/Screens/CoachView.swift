@@ -62,11 +62,7 @@ struct CoachView: View {
                 LazyVStack(spacing: 20) {
                     headerSection
                     spendingOverviewCard
-                    if let goalName = metrics?.goalName {
-                        goalProgressSection(goalName: goalName)
-                    }
                     unsortedTransactionsCard
-                    savingsGoalCard
                     opportunitiesSection
                     totalImpactCard
                 }
@@ -78,11 +74,6 @@ struct CoachView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarHidden(false)
-            .navigationBarItems(trailing: NavigationLink(destination: CrearMetaView()) {
-                Image(systemName: "plus.circle.fill")
-                    .foregroundColor(.blue)
-                    .font(.title2)
-            })
         }
     }
     
@@ -160,43 +151,7 @@ struct CoachView: View {
         .background(Color(.systemBackground))
         .cornerRadius(16)
     }
-    
-    // MARK: - Savings Goal Card
-    private var savingsGoalCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Meta semanal de ahorro")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("\(Int((metrics?.progress ?? 0) * 100))%")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
-            }
-            
-            HStack {
-                Text("Objetivo: $\(Int(metrics?.metaSemanal ?? 0))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text("Faltan $\(Int((metrics?.metaSemanal ?? 0) * (1 - (metrics?.progress ?? 0))))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            ProgressView(value: metrics?.progress ?? 0)
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                .scaleEffect(x: 1, y: 2, anchor: .center)
-        }
-        .padding(20)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-    }
+
     
     // MARK: - Unsorted Transactions Card
     private var unsortedTransactionsCard: some View {
@@ -366,57 +321,7 @@ struct CoachView: View {
         .cornerRadius(16)
         .shadow(radius: 2)
     }
-    
-    private func goalProgressSection(goalName: String) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "target")
-                    .foregroundColor(.green)
-                Text("Progreso de tu meta")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                Text(goalName)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Text("Tips para alcanzar tu meta:")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                ForEach(opportunities.filter { $0.title.contains(goalName) }) { opp in
-                    HStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(opp.title)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            Text(opp.description)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(12)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(8)
-                }
-            }
-            .padding(16)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(.systemBackground), Color.green.opacity(0.1)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(16)
-        }
-    }
+
     
     // MARK: - Networking
     private func fetchMetrics() {
