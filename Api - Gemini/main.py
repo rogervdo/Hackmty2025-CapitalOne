@@ -3,11 +3,11 @@ import google.generativeai as genai
 import mysql.connector
 from datetime import datetime
 
-# Configuración de Gemini AI
-genai.configure(api_key="AIzaSyA_TqVeJN3HvnngU-jMoXp8gXemps6YiS0")
+
+genai.configure(api_key="AIzaSyDVgPRUANwz6JUJv6LyjzB8HsrAdzPPtAs")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-# Configuración de la base de datos
+
 db_config = {
     "host": "capital-one-mysql-2a76c2d1-tec-a639.f.aivencloud.com",
     "user": "avnadmin",
@@ -152,7 +152,6 @@ def coach_metrics(user_id: int):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # 1. Obtener gastos del usuario y calcular métricas
         cursor.execute("SELECT amount, utility FROM Gastos WHERE user=%s", (user_id,))
         gastos = cursor.fetchall()
         
@@ -160,7 +159,7 @@ def coach_metrics(user_id: int):
         innecesarios = sum(g['amount'] for g in gastos if g['utility'] == 'regret')
         unsortedTransactions = sum(1 for g in gastos if g['utility'] == 'not assigned')
 
-        # 2. Obtener solo el nombre y monto de la última meta (AQUÍ ESTÁ EL CAMBIO)
+
         cursor.execute(
             "SELECT nombre_meta, goal_amount FROM Metas WHERE user=%s ORDER BY start_date DESC LIMIT 1", 
             (user_id,)
@@ -224,6 +223,37 @@ def coach_opportunities(user_id: int):
         return {"opportunities": opportunities[:3]}  
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/metas/{user_id}")
+def obtener_metas_usuario(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT 
+                idMeta,
+                nombre_meta,
+                descripcion,
+                goal_amount,
+                tipo,
+                start_date,
+                end_date
+            FROM 
+                Metas
+            WHERE 
+                user = %s
+            ORDER BY 
+                start_date DESC
+        """
+        cursor.execute(query, (user_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"metas": results}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/metas")
 def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., embed=True)):
     """
@@ -238,7 +268,7 @@ def crear_meta(prompt: str = Body(..., embed=True), user_id: int = Body(..., emb
         Eres un asesor financiero. A partir del siguiente prompt del usuario:
         "{prompt}"
 
-        Genera un JSON con esta estructura:
+        Genera un JSON con esta estructura pero las respuestas que sean en ingles, no el nombre de la calve:
         {{
           "nombre_meta": "...",
           "descripcion": "...",
