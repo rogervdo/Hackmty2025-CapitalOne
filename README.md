@@ -1,11 +1,8 @@
-# ✨ Cappie ✨ 
-### “Pequeños cambios, grandes logros.”
-<!-- HEADER -->
 <div align="center">
 
 <img src="https://dummyimage.com/1200x240/004481/ffffff&text=Cappie" alt="Cappie banner (placeholder)" width="100%" />
 
-<h1>💳 Cappie</h1>
+<h1>✨ Cappie ✨</h1>
 <h3><i>“Pequeños cambios, grandes logros.”</i></h3>
 
 <!-- Badges -->
