@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 
+
 // Este modelo es SOLO para la lista y el detalle.
 // No incluye GastoResponse para que no truenen los protocolos.
 struct MovementRowModel: Identifiable, Hashable {
@@ -99,11 +100,12 @@ struct MovimientosView: View {
 
             // Mapeamos TODAS las transacciones (no solo 5)
             var mapped: [MovementRowModel] = decoded.gastos.map { g in
-                MovementRowModel(
+                let friendlyDate = g.timeStamp.toUserFriendlyDate()
+                return MovementRowModel(
                     emoji: "💳", // placeholder mientras pedimos el emoji real
                     title: g.chargeName,
                     subtitleTop: g.category,
-                    subtitleBottom: "\(g.timeStamp) · \(g.location)",
+                    subtitleBottom: "\(friendlyDate) · \(g.location)",
                     amount: "$\(Int(g.amount))",
                     utility: g.utility
                 )
