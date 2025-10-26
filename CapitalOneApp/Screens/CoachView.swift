@@ -24,6 +24,16 @@ struct CoachMetrics: Decodable {
     let progress: Double
     let unsortedTransactions: Int
     let impactoTotal: Double
+    let goalName: String?
+}
+
+struct RelatedTransaction: Identifiable, Decodable {
+    let id: Int
+    let chargeName: String
+    let amount: Double
+    let category: String
+    let utility: String
+    let impact: String
 }
 
 struct CoachView: View {
@@ -51,10 +61,8 @@ struct CoachView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     headerSection
-                    devResetButton
                     spendingOverviewCard
                     unsortedTransactionsCard
-                    savingsGoalCard
                     opportunitiesSection
                     totalImpactCard
                 }
@@ -65,7 +73,7 @@ struct CoachView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationBarHidden(true)
+            .navigationBarHidden(false)
         }
     }
     
@@ -80,36 +88,21 @@ struct CoachView: View {
                         .foregroundColor(.white)
                         .font(.title2)
                 )
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text("Coach Financiero")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-
+                
                 Text("Tu semana en números")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-
+            
             Spacer()
         }
         .padding(.top, 20)
-    }
-
-    // MARK: - Dev Reset Button
-    private var devResetButton: some View {
-        Button(action: {
-            resetAllUtilities()
-        }) {
-            Text("devreset")
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.red)
-                .cornerRadius(12)
-        }
     }
     
     // MARK: - Spending Overview Card
@@ -158,43 +151,7 @@ struct CoachView: View {
         .background(Color(.systemBackground))
         .cornerRadius(16)
     }
-    
-    // MARK: - Savings Goal Card
-    private var savingsGoalCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Meta semanal de ahorro")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("\(Int((metrics?.progress ?? 0) * 100))%")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.blue)
-            }
-            
-            HStack {
-                Text("Objetivo: $\(Int(metrics?.metaSemanal ?? 0))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text("Faltan $\(Int((metrics?.metaSemanal ?? 0) * (1 - (metrics?.progress ?? 0))))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            ProgressView(value: metrics?.progress ?? 0)
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                .scaleEffect(x: 1, y: 2, anchor: .center)
-        }
-        .padding(20)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-    }
+
     
     // MARK: - Unsorted Transactions Card
     private var unsortedTransactionsCard: some View {
@@ -364,6 +321,7 @@ struct CoachView: View {
         .cornerRadius(16)
         .shadow(radius: 2)
     }
+
     
     // MARK: - Networking
     private func fetchMetrics() {
@@ -401,40 +359,6 @@ struct CoachView: View {
                     DispatchQueue.main.async {
                         self.opportunities = opps
                     }
-                }
-            }
-        }.resume()
-    }
-
-    private func resetAllUtilities() {
-        guard let url = URL(string: "https://unitycampus.onrender.com/gastos/reset-utilities") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        // Send body with confirm parameter (matching FastAPI Body format)
-        let body: [String: Any] = ["confirm": true]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error resetting utilities: \(error)")
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Status code: \(httpResponse.statusCode)")
-            }
-
-            if let data = data,
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                print("Reset response: \(json)")
-
-                // Refresh metrics after reset
-                DispatchQueue.main.async {
-                    fetchMetrics()
-                    fetchOpportunities()
                 }
             }
         }.resume()

@@ -35,7 +35,49 @@ app.add_middleware(
 
 
 # ------------------------------
-# Endpoint de emojis
+# Endpoint para crear usuario
+# ------------------------------
+@app.post("/usuarios")
+def crear_usuario(
+    user: str = Body(..., embed=True),
+    email: str = Body(..., embed=True),
+):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO Usuario (user, email)
+            VALUES (%s, %s)
+        """
+        values = (user, email)
+        cursor.execute(query, values)
+        conn.commit()
+        user_id = cursor.lastrowid
+        cursor.close()
+        conn.close()
+        return {"message": "✅ Usuario creado correctamente.", "user_id": user_id}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ------------------------------
+# Endpoint para obtener usuarios
+# ------------------------------
+@app.get("/usuarios")
+def obtener_usuarios():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT idUser, user, email FROM Usuario"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"usuarios": data}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ------------------------------
 @app.post("/emojis")
 def ask_gemini(prompt: str = Body(..., embed=True)):
@@ -297,19 +339,30 @@ def crear_meta(
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Verificar que el usuario existe
+        cursor.execute("SELECT idUser FROM Usuario WHERE idUser = %s", (user_id,))
+        user_exists = cursor.fetchone()
+        if not user_exists:
+            cursor.close()
+            conn.close()
+            return {
+                "error": f"Usuario con id {user_id} no existe. Por favor, crea el usuario primero."
+            }
+
         # Pedimos a Gemini que genere la meta en JSON estructurado
         base_prompt = f"""
         Eres un asesor financiero. A partir del siguiente prompt del usuario:
         "{prompt}"
 
+        La fecha de inicio es hoy: {datetime.now().strftime("%Y-%m-%d")}
+
         Genera un JSON con esta estructura:
         {{
           "nombre_meta": "...",
           "descripcion": "...",
-          "monto_objetivo": <float>,
+          "goal_amount": INT,
           "tipo": "ahorro" o "reducción de gasto",
-          "fecha_inicio": "YYYY-MM-DD",
-          "fecha_fin": "YYYY-MM-DD"
+          "end_date": "YYYY-MM-DD"
         }}
         """
         response = model.generate_content(base_prompt)
@@ -319,19 +372,22 @@ def crear_meta(
 
         meta_data = json.loads(meta_json)
 
+        # Usar la fecha actual como start_date
+        start_date = datetime.now().strftime("%Y-%m-%d")
+
         # Guardamos la meta en la base de datos
         query = """
-        INSERT INTO Metas (user, nombre_meta, descripcion, monto_objetivo, tipo, fecha_inicio, fecha_fin)
+        INSERT INTO Metas (user, nombre_meta, descripcion, goal_amount, tipo, start_date, end_date)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         values = (
             user_id,
             meta_data["nombre_meta"],
             meta_data["descripcion"],
-            meta_data["monto_objetivo"],
+            meta_data["goal_amount"],
             meta_data["tipo"],
-            meta_data["fecha_inicio"],
-            meta_data["fecha_fin"],
+            start_date,
+            meta_data["end_date"],
         )
         cursor.execute(query, values)
         conn.commit()
@@ -339,13 +395,47 @@ def crear_meta(
         cursor.close()
         conn.close()
 
+        # Agregar la fecha de inicio a la respuesta
+        meta_data["start_date"] = start_date
+
         return {"message": "✅ Meta creada exitosamente", "meta": meta_data}
     except Exception as e:
         return {"error": str(e)}
 
 
 # ------------------------------
-# Endpoint para obtener gastos no clasificados para SwipeView
+# Endpoint para obtener metas de un usuario
+# ------------------------------
+@app.get("/metas/{user_id}")
+def obtener_metas_usuario(user_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT 
+                idMeta,
+                nombre_meta,
+                descripcion,
+                goal_amount,
+                tipo,
+                start_date,
+                end_date
+            FROM 
+                Metas
+            WHERE 
+                user = %s
+            ORDER BY 
+                start_date DESC
+        """
+        cursor.execute(query, (user_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return {"metas": results}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ------------------------------
 @app.get("/swipe/unclassified/{user_id}")
 def get_unclassified_transactions(user_id: int):
