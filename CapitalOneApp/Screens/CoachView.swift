@@ -24,6 +24,16 @@ struct CoachMetrics: Decodable {
     let progress: Double
     let unsortedTransactions: Int
     let impactoTotal: Double
+    let goalName: String?
+}
+
+struct RelatedTransaction: Identifiable, Decodable {
+    let id: Int
+    let chargeName: String
+    let amount: Double
+    let category: String
+    let utility: String
+    let impact: String
 }
 
 struct CoachView: View {
@@ -51,8 +61,10 @@ struct CoachView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     headerSection
-                    devResetButton
                     spendingOverviewCard
+                    if let goalName = metrics?.goalName {
+                        goalProgressSection(goalName: goalName)
+                    }
                     unsortedTransactionsCard
                     savingsGoalCard
                     opportunitiesSection
@@ -65,7 +77,12 @@ struct CoachView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationBarHidden(true)
+            .navigationBarHidden(false)
+            .navigationBarItems(trailing: NavigationLink(destination: CrearMetaView()) {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundColor(.blue)
+                    .font(.title2)
+            })
         }
     }
     
@@ -80,36 +97,21 @@ struct CoachView: View {
                         .foregroundColor(.white)
                         .font(.title2)
                 )
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text("Coach Financiero")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-
+                
                 Text("Tu semana en números")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-
+            
             Spacer()
         }
         .padding(.top, 20)
-    }
-
-    // MARK: - Dev Reset Button
-    private var devResetButton: some View {
-        Button(action: {
-            resetAllUtilities()
-        }) {
-            Text("devreset")
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.red)
-                .cornerRadius(12)
-        }
     }
     
     // MARK: - Spending Overview Card
@@ -353,6 +355,57 @@ struct CoachView: View {
         .shadow(radius: 2)
     }
     
+    private func goalProgressSection(goalName: String) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "target")
+                    .foregroundColor(.green)
+                Text("Progreso de tu meta")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text(goalName)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text("Tips para alcanzar tu meta:")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                ForEach(opportunities.filter { $0.title.contains(goalName) }) { opp in
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(opp.title)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text(opp.description)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(8)
+                }
+            }
+            .padding(16)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(.systemBackground), Color.green.opacity(0.1)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(16)
+        }
+    }
+    
     // MARK: - Networking
     private func fetchMetrics() {
         guard let url = URL(string: "https://unitycampus.onrender.com/coach/\(userId)") else { return }
@@ -389,40 +442,6 @@ struct CoachView: View {
                     DispatchQueue.main.async {
                         self.opportunities = opps
                     }
-                }
-            }
-        }.resume()
-    }
-
-    private func resetAllUtilities() {
-        guard let url = URL(string: "https://unitycampus.onrender.com/gastos/reset-utilities") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        // Send body with confirm parameter (matching FastAPI Body format)
-        let body: [String: Any] = ["confirm": true]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error resetting utilities: \(error)")
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Status code: \(httpResponse.statusCode)")
-            }
-
-            if let data = data,
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                print("Reset response: \(json)")
-
-                // Refresh metrics after reset
-                DispatchQueue.main.async {
-                    fetchMetrics()
-                    fetchOpportunities()
                 }
             }
         }.resume()

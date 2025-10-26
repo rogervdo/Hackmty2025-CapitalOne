@@ -1,16 +1,8 @@
-//
-//  MovimientosView.swift
-//  CapitalOneApp
-//
-//  Created by Rogelio Villarreal on 10/25/25.
-//
-
 import SwiftUI
-import MapKit
 
 // MARK: - Model
-struct Movement: Identifiable, Hashable {
-    let id = UUID()
+struct Movement: Identifiable, Hashable, Codable {
+    let id: Int
     let emoji: String
     let name: String
     let description: String
@@ -21,60 +13,18 @@ struct Movement: Identifiable, Hashable {
     let classification: String
 }
 
-// MARK: - Main Movements View
+// MARK: - Movimientos View
 struct MovimientosView: View {
     
-    // Sample Data
-    let movements: [Movement] = [
-        Movement(
-            emoji: "🍔",
-            name: "Uber Eats",
-            description: "Burger order with delivery",
-            date: "Today 12:24",
-            place: "Downtown",
-            amount: "$160",
-            categoryText: "Delivery",
-            classification: "Regret"
-        ),
-        Movement(
-            emoji: "☕️",
-            name: "Café Azul",
-            description: "Vanilla latte + sweet bread",
-            date: "Today 09:15",
-            place: "Campus",
-            amount: "$55",
-            categoryText: "Coffee",
-            classification: "Regret"
-        ),
-        Movement(
-            emoji: "🛍️",
-            name: "Rappi",
-            description: "Quick groceries / night snack",
-            date: "Yesterday 20:30",
-            place: "Home",
-            amount: "$185",
-            categoryText: "Delivery",
-            classification: "Regret"
-        ),
-        Movement(
-            emoji: "🍵",
-            name: "Starbucks",
-            description: "Matcha latte venti",
-            date: "Yesterday 08:45",
-            place: "Downtown",
-            amount: "$65",
-            categoryText: "Coffee",
-            classification: "Regret"
-        )
-    ]
-    
+    @State private var movements: [Movement] = []
     @State private var selectedMovement: Movement? = nil
+    
+    let userId: Int = 1  // Cambiar según el usuario actual
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    
                     // HEADER
                     Text("Transactions")
                         .font(.system(size: 32, weight: .bold))
@@ -102,7 +52,84 @@ struct MovimientosView: View {
                 MovementDetailView(movement: mov)
                     .background(Color(.systemGray6))
             }
+            .task {
+                await fetchMovements()
+            }
         }
+    }
+    
+    // MARK: - Fetch Movements from API
+    func fetchMovements() async {
+        do {
+            guard let url = URL(string: "https://unitycampus.onrender.com/swipe/unclassified/\(userId)") else { return }
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            struct ApiResponse: Codable {
+                let transactions: [MovementResponse]
+            }
+            
+            struct MovementResponse: Codable {
+                let id: Int
+                let chargeName: String
+                let amount: Double
+                let location: String
+                let category: String
+                let timestamp: String
+                let utility: String
+            }
+            
+            let decoded = try JSONDecoder().decode(ApiResponse.self, from: data)
+            
+            // Generar emojis
+            var categoryEmojiMap: [String: String] = [:]
+            for tx in decoded.transactions {
+                if categoryEmojiMap[tx.category] == nil {
+                    let emojiData = try await getEmoji(for: tx.category)
+                    categoryEmojiMap[tx.category] = emojiData.emoji
+                }
+            }
+            
+            let loadedMovements: [Movement] = decoded.transactions.map { tx in
+                Movement(
+                    id: tx.id,
+                    emoji: categoryEmojiMap[tx.category] ?? "🏷️",
+                    name: tx.chargeName,
+                    description: tx.category,
+                    date: tx.timestamp,
+                    place: tx.location,
+                    amount: "$\(Int(tx.amount))",
+                    categoryText: tx.category,
+                    classification: tx.utility.capitalized
+                )
+            }
+            
+            DispatchQueue.main.async {
+                self.movements = loadedMovements
+            }
+            
+        } catch {
+            print("Error fetching movements: \(error)")
+        }
+    }
+    
+    // MARK: - Get emoji from API
+    func getEmoji(for category: String) async throws -> (emoji: String, category: String) {
+        guard let url = URL(string: "https://unitycampus.onrender.com/emojis") else {
+            return ("🏷️", category)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body = ["prompt": category]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        struct EmojiResponse: Codable {
+            let emoji: String
+            let category: String
+        }
+        let decoded = try JSONDecoder().decode(EmojiResponse.self, from: data)
+        return (decoded.emoji, decoded.category)
     }
 }
 
@@ -112,8 +139,6 @@ struct MovementRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            
-            // Emoji icon
             ZStack {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(.systemGray6))
@@ -122,7 +147,6 @@ struct MovementRow: View {
             }
             .frame(width: 56, height: 56)
             
-            // Info section
             VStack(alignment: .leading, spacing: 6) {
                 Text(movement.name)
                     .font(.system(size: 18, weight: .semibold))
@@ -146,7 +170,6 @@ struct MovementRow: View {
             
             Spacer()
             
-            // Amount and tag
             VStack(alignment: .trailing, spacing: 8) {
                 Text(movement.amount)
                     .font(.system(size: 18, weight: .semibold))
@@ -173,248 +196,39 @@ struct MovementRow: View {
     }
 }
 
-// MARK: - Map Pin
-struct MapPin: Identifiable {
-    let id = UUID()
-    let location: CLLocationCoordinate2D
-}
-
-// MARK: - Map Card (Monterrey Center with closer zoom)
-struct MapCardView: View {
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 25.6866, longitude: -100.3161),
-        span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-    )
-    
-    private let pins = [
-        MapPin(location: CLLocationCoordinate2D(latitude: 25.6866, longitude: -100.3161))
-    ]
-    
-    var body: some View {
-        Map(coordinateRegion: $region, annotationItems: pins) { pin in
-            MapAnnotation(coordinate: pin.location) {
-                VStack(spacing: 4) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.blue)
-                        .shadow(radius: 2)
-                    Text("Downtown")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .disabled(true)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .frame(height: 180)
-        .padding(.horizontal, 16)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 3)
-    }
-}
-
 // MARK: - Detail View
 struct MovementDetailView: View {
     let movement: Movement
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                Text(movement.emoji)
+                    .font(.system(size: 64))
                 
-                // 1. Purchase Card
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 16) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray6))
-                            Text(movement.emoji)
-                                .font(.system(size: 28))
-                        }
-                        .frame(width: 48, height: 48)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(movement.name)
-                                .font(.system(size: 20, weight: .semibold))
-                            Text(movement.date)
-                                .font(.system(size: 15))
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                    }
-                    
-                    Text(movement.amount)
-                        .font(.system(size: 28, weight: .semibold))
-                    
-                    Divider()
-                    
-                    HStack {
-                        Text("Category")
-                            .font(.system(size: 15))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text(movement.categoryText)
-                            .font(.system(size: 16))
-                    }
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
-                )
-                .padding(.horizontal, 16)
+                Text(movement.name)
+                    .font(.title)
+                    .bold()
                 
-                // 2. Map
-                MapCardView()
+                Text(movement.description)
+                    .foregroundColor(.secondary)
                 
-                // 3. Classification
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Classification")
-                        .font(.system(size: 17, weight: .semibold))
-                    
-                    HStack(spacing: 12) {
-                        Text("Aligned")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray5))
-                            )
-                        
-                        Text("Regret")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.red, lineWidth: 1.5)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.red.opacity(0.08))
-                                    )
-                            )
-                    }
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
-                )
-                .padding(.horizontal, 16)
-
-                // 4. Why is this in this category?
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.blue)
-                        Text("Why is this in this category?")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        BulletRow(text: "Detected 4 deliveries this week vs your limit of 2")
-                        BulletRow(text: "This expense is above your historical average")
-                        BulletRow(text: "We classified \"Delivery\" as Regret based on your profile")
-                    }
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
-                )
-                .padding(.horizontal, 16)
+                Text(movement.amount)
+                    .font(.title2)
                 
-                // 5. Buttons
-                VStack(spacing: 12) {
-                    Button {
-                        // Report issue
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "exclamationmark.circle")
-                            Text("Report issue")
-                            Spacer()
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.blue, lineWidth: 1.5)
-                        )
-                    }
-                    
-                    Button {
-                        // Add note
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "doc.text")
-                            Text("Add note")
-                            Spacer()
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.blue, lineWidth: 1.5)
-                        )
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 40)
+                Text(movement.place)
+                Text(movement.date)
+                
+                Spacer()
             }
-            .padding(.top)
-            .background(Color(.systemGray6))
-        }
-        .navigationBarBackButtonHidden(false)
-    }
-}
-
-// Helper bullet list
-struct BulletRow: View {
-    let text: String
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(Color.blue)
-                .frame(width: 5, height: 5)
-                .padding(.top, 6)
-            Text(text)
-                .font(.system(size: 15))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.leading)
+            .padding()
+            .navigationTitle("Detail")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
 
-// MARK: - Previews
+// MARK: - Preview
 #Preview("MovimientosView") {
     MovimientosView()
 }
-
-#Preview("MovementDetailView") {
-    NavigationStack {
-        MovementDetailView(
-            movement: Movement(
-                emoji: "🍔",
-                name: "Uber Eats",
-                description: "Burger order with delivery",
-                date: "Today 12:24",
-                place: "Downtown",
-                amount: "$160",
-                categoryText: "Delivery",
-                classification: "Regret"
-            )
-        )
-    }
-}
-
