@@ -217,22 +217,35 @@ struct CoachView: View {
                             .fontWeight(.semibold)
                     }
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("🎯 Quick Challenge")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("🎯")
+                                .font(.headline)
+                            Text("Quick Challenge")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
                         
                         Text("Complete \(metrics?.unsortedTransactions ?? 0) swipes to unlock insights")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                            .lineLimit(2)
                     }
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
-                        .font(.subheadline)
+                    VStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.orange.opacity(0.15))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.orange)
+                                    .font(.system(size: 14, weight: .semibold))
+                            )
+                    }
+                    
                 }
             }
             .padding(20)
