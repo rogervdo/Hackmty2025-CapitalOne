@@ -4,7 +4,7 @@ import mysql.connector
 from datetime import datetime
 
 
-genai.configure(api_key="AIzaSyAEiktqaOTWyEfgqyOn3rGaw7yv5Qb1lpI")
+genai.configure(api_key="AIzaSyA_TqVeJN3HvnngU-jMoXp8gXemps6YiS0")
 model = genai.GenerativeModel("gemini-2.0-flash")
 
 
@@ -32,9 +32,7 @@ def get_coach_summary(
     goalName: str = Body(..., embed=True),
     progress: float = Body(..., embed=True)
 ):
-    """
-    Usa Gemini para generar un resumen personalizado para el Coach View.
-    """
+
     try:
        
         impacto_porcentaje = int((impactoTotal / innecesarios) * 100) if innecesarios > 0 else 0
