@@ -17,7 +17,7 @@ struct MainTabView: View {
             MovimientosView()
                 .tabItem {
                    Image(systemName: "receipt.fill")
-                   Text("Movs")
+                   Text("Transactions")
                 }
                 .tag(1)
                 .navigationBarBackButtonHidden(true)

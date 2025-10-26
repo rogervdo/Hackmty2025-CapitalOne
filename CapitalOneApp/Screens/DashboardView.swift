@@ -1,48 +1,66 @@
 import SwiftUI
+import Charts
 
-// MARK: - Emoji API Response
+// MARK: - API Responses
+
+struct GastosWrapper: Decodable {
+    let gastos: [GastoResponse]
+}
+
+struct GastoResponse: Decodable {
+    let chargeName: String
+    let amount: Double
+    let timeStamp: String
+    let location: String
+    let category: String
+    let utility: String
+}
+
 struct EmojiResponse: Decodable {
     let emoji: String
     let category: String
 }
 
-// MARK: - Movement model (CORREGIDA: Eliminamos 'mutating')
+// MARK: - UI models
+
 struct DashboardMovement: Identifiable {
     let id = UUID()
-    var emoji: String = "💰" // Default emoji, will be updated from API
+    var emoji: String = "💰"
     let title: String
     let subtitle: String
     let amount: String
     let tag: String
     let tagColor: Color
-    // NOTA: Eliminamos la función 'updateEmoji' de la estructura.
+}
+
+// para el pie chart
+struct CategorySlice: Identifiable {
+    let id = UUID()
+    let category: String
+    let total: Double
 }
 
 // MARK: - Dashboard View
+
 struct DashboardView: View {
-    // ⚠️ AJUSTAR: URL base de tu API
     private let baseURL = "https://unitycampus.onrender.com"
+    private let userID = 1
     
     @Binding var selectedTab: Int
+    
     @State private var movements: [DashboardMovement] = []
+    @State private var categorySlices: [CategorySlice] = []
     
-    // Initial movement data
-    private let initialMovements = [
-        DashboardMovement(title: "Uber Eats", subtitle: "Hoy 12:24 · Centro", amount: "$160", tag: "Regret", tagColor: .red),
-        DashboardMovement(title: "Café Azul", subtitle: "Ayer · Tec", amount: "$55", tag: "Regret", tagColor: .red),
-        DashboardMovement(title: "Soriana", subtitle: "23 Oct", amount: "$420", tag: "Aligned", tagColor: .blue),
-        DashboardMovement(title: "Netflix", subtitle: "21 Oct", amount: "$129", tag: "Regret", tagColor: .red),
-        DashboardMovement(title: "Uber", subtitle: "20 Oct · Trabajo", amount: "$85", tag: "Aligned", tagColor: .blue)
-    ]
+    // estado de carga global
+    @State private var isLoadingData = true
     
-    // FUNCIÓN DE RED (AUXILIAR, NO ASOCIADA A LA ESTRUCTURA)
+    // MARK: helper: llama /emojis
     private func fetchEmoji(for title: String) async -> String? {
         guard let url = URL(string: "\(baseURL)/emojis") else { return nil }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
         let body = ["prompt": title]
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else { return nil }
         request.httpBody = jsonData
@@ -50,42 +68,102 @@ struct DashboardView: View {
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
             
-            if let response = try? JSONDecoder().decode(EmojiResponse.self, from: data) {
-                return response.emoji
-            } else if let jsonString = String(data: data, encoding: .utf8) {
-                // Fallback robusto para JSON no estándar (similar a tu lógica de FastAPI)
-                if let emojiPart = jsonString.split(separator: "\"emoji\":").last?.split(separator: ",").first {
-                    let cleanEmoji = String(emojiPart).replacingOccurrences(of: "\"", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !cleanEmoji.isEmpty {
-                        return cleanEmoji
-                    }
+            if let decoded = try? JSONDecoder().decode(EmojiResponse.self, from: data) {
+                return decoded.emoji
+            }
+            if let raw = String(data: data, encoding: .utf8),
+               let rangeEmoji = raw.range(of: "\"emoji\":") {
+                let after = raw[rangeEmoji.upperBound...]
+                if let comma = after.firstIndex(of: ",") {
+                    let piece = after[..<comma]
+                    let clean = piece
+                        .replacingOccurrences(of: "\"", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !clean.isEmpty { return clean }
                 }
             }
         } catch {
-            print("Error fetching emoji: \(error.localizedDescription)")
+            print("❌ fetchEmoji error:", error.localizedDescription)
         }
         return nil
     }
     
-    // CORRECCIÓN CLAVE: Función de carga que gestiona el estado
+    // MARK: cargar gastos + movimientos + categorias
     private func loadAndCategorizeMovements() {
-        // 1. Iniciar con los datos estáticos
-        movements = initialMovements
-        
-        // 2. Tarea asíncrona para actualizar los emojis
-        for index in movements.indices {
-            let title = movements[index].title
+        Task {
+            guard let url = URL(string: "\(baseURL)/gastos/\(userID)") else { return }
             
-            Task {
-                if let newEmoji = await fetchEmoji(for: title) {
-                    // Actualizar el estado en el hilo principal
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                
+                guard let decoded = try? JSONDecoder().decode(GastosWrapper.self, from: data) else {
+                    print("❌ error decoding gastos JSON")
                     await MainActor.run {
-                        // Verificación de rango por seguridad
-                        if index < self.movements.count {
-                            self.movements[index].emoji = newEmoji
+                        self.isLoadingData = false
+                    }
+                    return
+                }
+                
+                // top 5 recientes
+                let firstFive = Array(decoded.gastos.prefix(5))
+                
+                // map para UI
+                let mapped: [DashboardMovement] = firstFive.map { g in
+                    let (tagText, tagColor): (String, Color) = {
+                        switch g.utility.lowercased() {
+                        case "regret":   return ("Regret", .red)
+                        case "aligned":  return ("Aligned", .blue)
+                        default:         return ("Not assigned", .gray)
+                        }
+                    }()
+                    
+                    let subtitleText = "\(g.timeStamp) · \(g.location)"
+                    
+                    return DashboardMovement(
+                        emoji: "💳", // temp mientras llega el emoji real
+                        title: g.chargeName,
+                        subtitle: subtitleText,
+                        amount: "$\(Int(g.amount))",
+                        tag: tagText,
+                        tagColor: tagColor
+                    )
+                }
+                
+                // pie chart data (todas las transacciones)
+                let totalsByCategory: [String: Double] = decoded.gastos.reduce(into: [:]) { acc, g in
+                    acc[g.category, default: 0] += g.amount
+                }
+                
+                let slices: [CategorySlice] = totalsByCategory
+                    .map { (cat, totalCat) in
+                        CategorySlice(category: cat, total: totalCat)
+                    }
+                    .sorted { $0.total > $1.total }
+                
+                // update movimientos y chart slices
+                await MainActor.run {
+                    self.movements = mapped
+                    self.categorySlices = slices
+                }
+                
+                // pedir emoji para cada movimiento y actualizar
+                for (idx, mov) in mapped.enumerated() {
+                    if let newEmoji = await fetchEmoji(for: mov.title) {
+                        await MainActor.run {
+                            if idx < self.movements.count {
+                                self.movements[idx].emoji = newEmoji
+                            }
                         }
                     }
                 }
+                
+            } catch {
+                print("❌ network error:", error.localizedDescription)
+            }
+            
+            // terminamos carga inicial
+            await MainActor.run {
+                self.isLoadingData = false
             }
         }
     }
@@ -108,11 +186,14 @@ struct DashboardView: View {
                 BalanceCard()
                     .padding(.horizontal, 16)
                 
-                // CARD: Meta semanal ahorro
-                WeeklyGoalCard()
-                    .padding(.horizontal, 16)
+                // CARD: Pie Chart por categoría
+                CategoryPieCard(
+                    slices: categorySlices,
+                    isLoading: isLoadingData
+                )
+                .padding(.horizontal, 16)
                 
-                // ROW: Dos cards pequeñas
+                // ROW: Dos cards pequeñas (dummy por ahora)
                 HStack(spacing: 12) {
                     SmallStatCard(
                         title: "Cap discrecional",
@@ -141,27 +222,32 @@ struct DashboardView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     VStack(spacing: 12) {
-                        ForEach(movements.prefix(5)) { mov in
-                            // SINTAXIS CORREGIDA del Button
-                            Button(action: {
-                                // 🔥 go to Movs tab (index 1)
-                                selectedTab = 1
-                            }) {
-                                DashboardMovementRow(movement: mov)
+                        if isLoadingData {
+                            // skeleton de 5 renglones
+                            ForEach(0..<5, id: \.self) { _ in
+                                DashboardMovementRow.skeleton()
                             }
-                            .buttonStyle(.plain)
+                        } else {
+                            ForEach(movements.prefix(5)) { mov in
+                                Button(action: {
+                                    selectedTab = 1 // ir a Movs tab
+                                }) {
+                                    DashboardMovementRow(movement: mov, showSkeleton: false)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
                 }
                 .padding(.horizontal, 16)
                 .onAppear {
-                    if movements.isEmpty {
+                    if movements.isEmpty && isLoadingData {
                         loadAndCategorizeMovements()
                     }
                 }
                 
                 // CARD: Coach financiero
-                CoachCard(selectedTab: $selectedTab)    // 🔥 pass binding
+                CoachCard(selectedTab: $selectedTab)
                     .padding(.horizontal, 16)
                 
                 Spacer(minLength: 32)
@@ -172,42 +258,87 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Movement Row (Se mantiene igual)
+// MARK: - Movement Row con skeleton support
 private struct DashboardMovementRow: View {
     let movement: DashboardMovement
+    var showSkeleton: Bool = false
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
+            // avatar / emoji
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
-                Text(movement.emoji) // Usará el emoji actualizado
-                    .font(.system(size: 28))
+                
+                if showSkeleton {
+                    // bloque gris animado
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray4).opacity(0.4))
+                        .frame(width: 28, height: 28)
+                        .redacted(reason: .placeholder)
+                        .shimmer()
+                } else {
+                    Text(movement.emoji)
+                        .font(.system(size: 28))
+                }
             }
             .frame(width: 48, height: 48)
             
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(movement.title)
-                        .font(.system(size: 17, weight: .semibold))
-                    Spacer()
-                    Text(movement.amount)
-                        .font(.system(size: 17, weight: .semibold))
+                    if showSkeleton {
+                        Rectangle()
+                            .fill(Color(.systemGray4).opacity(0.4))
+                            .frame(width: 120, height: 16)
+                            .cornerRadius(4)
+                            .redacted(reason: .placeholder)
+                            .shimmer()
+                        Spacer()
+                        Rectangle()
+                            .fill(Color(.systemGray4).opacity(0.4))
+                            .frame(width: 50, height: 16)
+                            .cornerRadius(4)
+                            .redacted(reason: .placeholder)
+                            .shimmer()
+                    } else {
+                        Text(movement.title)
+                            .font(.system(size: 17, weight: .semibold))
+                        Spacer()
+                        Text(movement.amount)
+                            .font(.system(size: 17, weight: .semibold))
+                    }
                 }
                 
-                Text(movement.subtitle)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                if showSkeleton {
+                    Rectangle()
+                        .fill(Color(.systemGray4).opacity(0.4))
+                        .frame(width: 180, height: 14)
+                        .cornerRadius(4)
+                        .redacted(reason: .placeholder)
+                        .shimmer()
+                } else {
+                    Text(movement.subtitle)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
                 
-                Text(movement.tag)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(movement.tagColor)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(
-                        Capsule()
-                            .fill(movement.tagColor.opacity(0.12))
-                    )
+                if showSkeleton {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemGray4).opacity(0.4))
+                        .frame(width: 80, height: 24)
+                        .redacted(reason: .placeholder)
+                        .shimmer()
+                } else {
+                    Text(movement.tag)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(movement.tagColor)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(
+                            Capsule()
+                                .fill(movement.tagColor.opacity(0.12))
+                        )
+                }
             }
         }
         .padding(16)
@@ -217,9 +348,126 @@ private struct DashboardMovementRow: View {
                 .shadow(color: Color.black.opacity(0.07), radius: 6, x: 0, y: 3)
         )
     }
+    
+    // helper estático para skeleton
+    static func skeleton() -> some View {
+        DashboardMovementRow(
+            movement: DashboardMovement(
+                emoji: "💳",
+                title: "-----",
+                subtitle: "-----",
+                amount: "$-",
+                tag: "-----",
+                tagColor: .gray
+            ),
+            showSkeleton: true
+        )
+    }
 }
 
-// MARK: - Componentes Auxiliares (Sin cambios)
+// MARK: - Pie Chart Card con loading
+private struct CategoryPieCard: View {
+    let slices: [CategorySlice]
+    let isLoading: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Gasto por categoría")
+                    .font(.system(size: 17, weight: .semibold))
+                Spacer()
+            }
+            
+            if isLoading {
+                // loading view
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                    Text("Cargando categorías…")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .frame(height: 180)
+                .frame(maxWidth: .infinity)
+            } else {
+                // Pie chart real
+                Chart(slices) { slice in
+                    SectorMark(
+                        angle: .value("Total", slice.total),
+                        innerRadius: .ratio(0.55),
+                        outerRadius: .ratio(0.95)
+                    )
+                    .foregroundStyle(by: .value("Category", slice.category))
+                }
+                .frame(height: 180)
+                
+                // leyenda simple sin porcentaje
+                ForEach(slices.prefix(4)) { slice in
+                    HStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.15))
+                            .frame(width: 10, height: 10)
+                            .overlay(
+                                Circle().stroke(Color.primary.opacity(0.4), lineWidth: 0.5)
+                            )
+                        
+                        Text(slice.category)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text(String(format: "$%.0f", slice.total))
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
+        )
+    }
+}
+
+// MARK: - shimmer modifier (mini)
+private struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = 0
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.0),
+                        Color.white.opacity(0.4),
+                        Color.white.opacity(0.0)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .rotationEffect(.degrees(20))
+                .offset(x: phase)
+                .blendMode(.plusLighter)
+                .mask(content)
+            )
+            .onAppear {
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    phase = 200
+                }
+            }
+    }
+}
+
+private extension View {
+    func shimmer() -> some View {
+        self.modifier(ShimmerModifier())
+    }
+}
+
+// MARK: - Other cards (sin cambios)
 
 private struct BalanceCard: View {
     var body: some View {
@@ -229,7 +477,7 @@ private struct BalanceCard: View {
                     LinearGradient(
                         colors: [
                             Color(red: 32/255, green: 79/255, blue: 1.0),
-                        Color(red: 25/255, green: 60/255, blue: 0.9)
+                            Color(red: 25/255, green: 60/255, blue: 0.9)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -278,49 +526,6 @@ private struct BalanceCard: View {
             .padding(16)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-private struct WeeklyGoalCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            
-            HStack {
-                Text("Meta semanal ahorro")
-                    .font(.system(size: 17, weight: .semibold))
-                Spacer()
-                Text("37%")
-                    .font(.system(size: 16, weight: .semibold))
-            }
-            
-            HStack {
-                Text("$1,800 objetivo")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("Faltan $1,140")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(.systemGray4))
-                        .frame(height: 8)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.blue)
-                        .frame(width: geo.size.width * 0.37, height: 8)
-                }
-            }
-            .frame(height: 8)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 5)
-        )
     }
 }
 
@@ -404,7 +609,7 @@ private struct QuickActionButton: View {
 }
 
 private struct CoachCard: View {
-    @Binding var selectedTab: Int    // 🔥 added
+    @Binding var selectedTab: Int
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -422,8 +627,7 @@ private struct CoachCard: View {
             }
             
             Button {
-                // 🔥 go straight to Coach tab (index 2)
-                selectedTab = 2
+                selectedTab = 2 // Coach tab
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "figure.walk.circle.fill")
@@ -447,7 +651,7 @@ private struct CoachCard: View {
                     .fill(
                         LinearGradient(
                             colors: [Color(red: 0.1, green: 0.6, blue: 0.2),
-                                    Color(red: 0.07, green: 0.5, blue: 0.18)],
+                                     Color(red: 0.07, green: 0.5, blue: 0.18)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -467,6 +671,5 @@ private struct CoachCard: View {
 
 // MARK: - Preview
 #Preview {
-    // preview with a constant binding
     DashboardView(selectedTab: .constant(0))
 }

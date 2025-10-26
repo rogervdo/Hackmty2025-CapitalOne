@@ -122,12 +122,12 @@ struct ProfileHeaderView: View {
                     )
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("María González")
+                    Text("Demo Account")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    Text("maria.gonzalez@email.com")
+                    Text("demo@email.com")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
