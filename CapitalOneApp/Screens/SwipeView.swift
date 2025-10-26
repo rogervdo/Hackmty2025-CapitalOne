@@ -364,35 +364,46 @@ struct SwipeView: View {
             offset = CGSize(width: -500, height: 0)
             rotation = -20
         }
-        
+
+        let currentTransaction = transactions[currentIndex]
+
         // Update the transaction's aligned property
         transactions[currentIndex] = Transaction(
-            id: transactions[currentIndex].id,
-            chargeName: transactions[currentIndex].chargeName,
-            timestamp: transactions[currentIndex].timestamp,
-            amount: transactions[currentIndex].amount,
-            location: transactions[currentIndex].location,
-            category: transactions[currentIndex].category,
-            emoji: transactions[currentIndex].emoji,
+            id: currentTransaction.id,
+            apiId: currentTransaction.apiId,
+            chargeName: currentTransaction.chargeName,
+            timestamp: currentTransaction.timestamp,
+            amount: currentTransaction.amount,
+            location: currentTransaction.location,
+            category: currentTransaction.category,
+            emoji: currentTransaction.emoji,
             aligned: "regret"
         )
-        
+
         regretCount += 1
-        
+
+        // Send update to API
+        if let apiId = currentTransaction.apiId {
+            updateTransactionUtility(transactionId: apiId, utilityValue: "regret")
+        } else {
+            print("⚠️ Warning: Transaction has no API ID, skipping update")
+        }
+
         // Log the swipe action with Transaction.category
         print("🔴 SWIPE LEFT (Regret)")
         print("   Transaction: \(transactions[currentIndex].chargeName)")
         print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
         print("   Aligned Value: regret")
+        print("   API ID: \(currentTransaction.apiId ?? 0)")
         print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
         print("   Timestamp: \(transactions[currentIndex].timestamp)")
         print("---")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             currentIndex += 1
             offset = .zero
             rotation = 0
-            
+
             // Check if we've completed all transactions
             if currentIndex >= transactions.count {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
@@ -413,35 +424,46 @@ struct SwipeView: View {
             offset = CGSize(width: 500, height: 0)
             rotation = 20
         }
-        
+
+        let currentTransaction = transactions[currentIndex]
+
         // Update the transaction's aligned property
         transactions[currentIndex] = Transaction(
-            id: transactions[currentIndex].id,
-            chargeName: transactions[currentIndex].chargeName,
-            timestamp: transactions[currentIndex].timestamp,
-            amount: transactions[currentIndex].amount,
-            location: transactions[currentIndex].location,
-            category: transactions[currentIndex].category,
-            emoji: transactions[currentIndex].emoji,
-            aligned: "align"
+            id: currentTransaction.id,
+            apiId: currentTransaction.apiId,
+            chargeName: currentTransaction.chargeName,
+            timestamp: currentTransaction.timestamp,
+            amount: currentTransaction.amount,
+            location: currentTransaction.location,
+            category: currentTransaction.category,
+            emoji: currentTransaction.emoji,
+            aligned: "aligned"
         )
-        
+
         alignedCount += 1
-        
+
+        // Send update to API
+        if let apiId = currentTransaction.apiId {
+            updateTransactionUtility(transactionId: apiId, utilityValue: "aligned")
+        } else {
+            print("⚠️ Warning: Transaction has no API ID, skipping update")
+        }
+
         // Log the swipe action with Transaction.category
-        print("🟢 SWIPE RIGHT (Align)")
+        print("🟢 SWIPE RIGHT (Aligned)")
         print("   Transaction: \(transactions[currentIndex].chargeName)")
         print("   Amount: $\(String(format: "%.2f", transactions[currentIndex].amount))")
-        print("   Aligned Value: align")
+        print("   Aligned Value: aligned")
+        print("   API ID: \(currentTransaction.apiId ?? 0)")
         print("   Location: \(transactions[currentIndex].location ?? "Unknown")")
         print("   Timestamp: \(transactions[currentIndex].timestamp)")
         print("---")
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             currentIndex += 1
             offset = .zero
             rotation = 0
-            
+
             // Check if we've completed all transactions
             if currentIndex >= transactions.count {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
@@ -616,6 +638,57 @@ struct SwipeView: View {
                     self.isLoading = false
                     print("❌ Decoding error: \(error)")
                 }
+            }
+        }.resume()
+    }
+
+    private func updateTransactionUtility(transactionId: Int, utilityValue: String) {
+        guard let url = URL(string: "http://127.0.0.1:8000/swipe/update") else {
+            print("❌ Invalid URL for swipe update")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "transaction_id": transactionId,
+            "utility_value": utilityValue
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            print("❌ Failed to serialize request body: \(error)")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Network error updating utility: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = data else {
+                print("❌ No data received from update endpoint")
+                return
+            }
+
+            // Debug: Print response
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📡 Update Response: \(jsonString)")
+            }
+
+            // Optionally parse response
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    if let message = json["message"] as? String {
+                        print("✅ \(message)")
+                    }
+                }
+            } catch {
+                print("⚠️ Could not parse update response: \(error)")
             }
         }.resume()
     }

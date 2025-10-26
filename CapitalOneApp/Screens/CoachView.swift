@@ -51,6 +51,7 @@ struct CoachView: View {
             ScrollView {
                 LazyVStack(spacing: 20) {
                     headerSection
+                    devResetButton
                     spendingOverviewCard
                     unsortedTransactionsCard
                     savingsGoalCard
@@ -79,21 +80,36 @@ struct CoachView: View {
                         .foregroundColor(.white)
                         .font(.title2)
                 )
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Coach Financiero")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-                
+
                 Text("Tu semana en números")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
         }
         .padding(.top, 20)
+    }
+
+    // MARK: - Dev Reset Button
+    private var devResetButton: some View {
+        Button(action: {
+            resetAllUtilities()
+        }) {
+            Text("devreset")
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.red)
+                .cornerRadius(12)
+        }
     }
     
     // MARK: - Spending Overview Card
@@ -373,6 +389,40 @@ struct CoachView: View {
                     DispatchQueue.main.async {
                         self.opportunities = opps
                     }
+                }
+            }
+        }.resume()
+    }
+
+    private func resetAllUtilities() {
+        guard let url = URL(string: "https://unitycampus.onrender.com/gastos/reset-utilities") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // Send body with confirm parameter (matching FastAPI Body format)
+        let body: [String: Any] = ["confirm": true]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error resetting utilities: \(error)")
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Status code: \(httpResponse.statusCode)")
+            }
+
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                print("Reset response: \(json)")
+
+                // Refresh metrics after reset
+                DispatchQueue.main.async {
+                    fetchMetrics()
+                    fetchOpportunities()
                 }
             }
         }.resume()
